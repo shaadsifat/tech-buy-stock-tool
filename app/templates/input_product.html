@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}Input Product{% endblock %}
+{% block content %}
+<h1>Input Product</h1>
+
+<div class="card content-narrow">
+    <form method="post" action="{{ url_for('products.create_product') }}">
+        <div class="form-group">
+            <label for="category_id">Category</label>
+            <select id="category_id" name="category_id" required>
+                <option value="" disabled selected>Select a category</option>
+                {% for c in categories %}
+                <option value="{{ c.id }}">{{ c.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        {% if not categories %}
+        <p class="muted">No categories yet — <a href="{{ url_for('categories.categories_view') }}">add one first</a>.</p>
+        {% endif %}
+
+        <div class="form-group">
+            <label for="name">Product Name</label>
+            <input type="text" id="name" name="name" placeholder="e.g. Logitech G102 Lightsync" required>
+        </div>
+
+        <div class="form-group">
+            <label for="techbuy_link">Tech Buy Link</label>
+            <input type="url" id="techbuy_link" name="techbuy_link" placeholder="https://www.techbuy.com.au/product/..." required>
+        </div>
+
+        <div class="form-group">
+            <label for="other_link">Other website link</label>
+            <input type="url" id="other_link" name="other_link" placeholder="https://www.othersite.com/product/..." required>
+        </div>
+
+        <button type="submit" class="btn">Add Product</button>
+    </form>
+</div>
+{% endblock %}

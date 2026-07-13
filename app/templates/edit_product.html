@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}Edit Product{% endblock %}
+{% block content %}
+<h1>Edit Product</h1>
+
+<div class="card content-narrow">
+    <form method="post" action="{{ url_for('products.update_product', product_id=product.id) }}">
+        <div class="form-group">
+            <label for="category_id">Category</label>
+            <select id="category_id" name="category_id" required>
+                {% for c in categories %}
+                <option value="{{ c.id }}" {{ 'selected' if c.id == product.category_id else '' }}>{{ c.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="name">Product Name</label>
+            <input type="text" id="name" name="name" value="{{ product.name }}" required>
+        </div>
+
+        <div class="form-group">
+            <label for="techbuy_link">Tech Buy Link</label>
+            <input type="url" id="techbuy_link" name="techbuy_link" value="{{ product.techbuy_link }}" required>
+        </div>
+
+        <div class="form-group">
+            <label for="other_link">Other website link</label>
+            <input type="url" id="other_link" name="other_link" value="{{ product.other_link }}" required>
+        </div>
+
+        <p class="muted">Changing either link will clear this product's previously fetched data — you'll need to run "Start Fetching" again to get fresh prices.</p>
+
+        <div class="btn-row">
+            <button type="submit" class="btn">Save Changes</button>
+            <a href="{{ url_for('products.list_products_view') }}" class="btn btn-secondary">Cancel</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

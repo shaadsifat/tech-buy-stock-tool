@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+
+{% macro bar_chart(title, data, colors) %}
+{% set max_val = (data.values() | list | max) if data else 0 %}
+<div class="chart-card">
+    <h3>{{ title }}</h3>
+    <div class="bar-chart">
+        {% for label, value in data.items() %}
+        {% set pct = ((value / max_val * 100) if max_val else 0) %}
+        <div class="bar-row" style="animation-delay: {{ loop.index0 * 0.05 }}s;">
+            <span class="bar-label">{{ label }}</span>
+            <div class="bar-track">
+                <div class="bar-fill" style="--bar-width: {{ pct }}%; background: {{ colors[loop.index0] }}; animation-delay: {{ 0.1 + loop.index0 * 0.06 }}s;"></div>
+            </div>
+            <span class="bar-value">{{ value }}</span>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endmacro %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Dashboard</h1>
+    <p>Fetch live prices, compare against your listings, and export the results.</p>
+</div>
+
+<div class="stat-grid">
+    <div class="stat-card" style="animation-delay: 0.02s;">
+        <div class="stat-label">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h16M4 18h10"></path></svg>
+            Total Products
+        </div>
+        <div class="stat-value">{{ stats.total_products }}</div>
+    </div>
+    <div class="stat-card" style="animation-delay: 0.06s;">
+        <div class="stat-label">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41 12 22l-9-9V4a1 1 0 0 1 1-1h9z"></path><circle cx="7.5" cy="7.5" r="1.5"></circle></svg>
+            Categories
+        </div>
+        <div class="stat-value">{{ stats.total_categories }}</div>
+    </div>
+    <div class="stat-card accent-danger" style="animation-delay: 0.1s;">
+        <div class="stat-label">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4M12 17h.01"></path><circle cx="12" cy="12" r="9"></circle></svg>
+            Need Action
+        </div>
+        <div class="stat-value">{{ stats.need_action }}</div>
+    </div>
+    <div class="stat-card accent-accent" style="animation-delay: 0.14s;">
+        <div class="stat-label">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4v16h16M8 15l3-4 3 3 4-6"></path></svg>
+            Fetched Ready
+        </div>
+        <div class="stat-value">{{ fetched_count }}</div>
+    </div>
+</div>
+
+<div class="card">
+    <h2 style="margin-top: 0; font-size: 1.05rem;">Stock Fetch</h2>
+    <div class="btn-row">
+        <button id="start-fetch-btn" class="btn">Start Fetching</button>
+        <a id="import-excel-btn" class="btn btn-secondary" href="{{ url_for('main.export_excel') }}"
+           style="display: {{ 'inline-flex' if fetched_count > 0 else 'none' }};">
+            Import in Excel File
+        </a>
+        <form id="clear-form" method="post" action="{{ url_for('main.fetch_clear') }}"
+              style="display: {{ 'inline' if fetched_count > 0 else 'none' }};"
+              onsubmit="return confirm('Remove previously fetched data?');">
+            <button type="submit" class="btn btn-danger">Remove Previous Fetched Data</button>
+        </form>
+    </div>
+
+    <div id="progress-section" style="display: none;">
+        <div class="progress-bar"><div id="progress-fill" class="progress-fill"></div></div>
+        <p class="muted" id="progress-text"></p>
+    </div>
+
+    <p class="muted" id="fetched-count-text">
+        {{ fetched_count }} product(s) have fetched data ready.
+    </p>
+</div>
+
+<div class="card">
+    <h3 style="margin-top: 0;">Quick Summary</h3>
+    <p class="muted" style="margin-top: -0.5rem;">Click to copy — plain text, ready to paste to management.</p>
+    <pre id="summary-box" class="summary-box" title="Click to copy">{{ summary_text }}</pre>
+</div>
+
+<div class="chart-grid">
+    {{ bar_chart('Fetched Status', report.fetched_status, ['#059669', '#f7941d', '#f7941d', '#dc2626', '#9ca3af']) }}
+    {{ bar_chart('Stock Status (Tech Buy)', report.techbuy_stock, ['#059669', '#dc2626', '#9ca3af']) }}
+    {{ bar_chart('Stock Status (Other)', report.other_stock, ['#059669', '#dc2626', '#9ca3af']) }}
+    {{ bar_chart('Need Action', report.need_action, ['#dc2626', '#059669', '#9ca3af']) }}
+    {{ bar_chart('Updated', report.updated, ['#059669', '#dc2626', '#9ca3af']) }}
+    {{ bar_chart('Reviewed', report.reviewed, ['#1f6f91', '#9ca3af']) }}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/main.js') }}"></script>
+{% endblock %}

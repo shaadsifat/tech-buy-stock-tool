@@ -1,0 +1,14 @@
+# Local product/category database — private business data, never commit this
+data/*.db
+data/*.db-wal
+data/*.db-shm
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# OS junk
+Thumbs.db
+.DS_Store

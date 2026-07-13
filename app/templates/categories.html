@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block title %}Categories{% endblock %}
+{% block content %}
+<h1>Product Categories</h1>
+
+<div class="card">
+    <form method="post" action="{{ url_for('categories.add_category') }}" class="btn-row" style="align-items: flex-end;">
+        <div class="form-group" style="margin-bottom: 0;">
+            <label for="name">New category name</label>
+            <input type="text" id="name" name="name" placeholder="e.g. Mouse" required>
+        </div>
+        <button type="submit" class="btn">Add Category</button>
+    </form>
+</div>
+
+<div class="card">
+    <div class="table-scroll">
+    <table>
+        <thead>
+            <tr>
+                <th>Category</th>
+                <th>Products in category</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for c in categories %}
+            <tr>
+                <td>{{ c.name }}</td>
+                <td>{{ c.product_count }}</td>
+                <td>
+                    <form method="post" class="inline"
+                          action="{{ url_for('categories.delete_category', category_id=c.id) }}"
+                          onsubmit="return confirm('Delete category {{ c.name }}?');">
+                        <button type="submit" class="btn btn-danger" {{ 'disabled' if c.product_count > 0 else '' }}>
+                            Delete
+                        </button>
+                    </form>
+                </td>
+            </tr>
+            {% else %}
+            <tr><td colspan="3" class="muted">No categories yet.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    </div>
+</div>
+{% endblock %}
