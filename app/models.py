@@ -166,6 +166,26 @@ def delete_category(category_id):
 
 # ---------- products ----------
 
+def _find_duplicate_product(conn, name, techbuy_link, exclude_id=None):
+    """Returns an error message if name or Tech Buy Link is already used by another product."""
+    exclude_clause = "AND id != ?" if exclude_id is not None else ""
+    params_suffix = (exclude_id,) if exclude_id is not None else ()
+
+    if conn.execute(
+        f"SELECT id FROM products WHERE name = ? COLLATE NOCASE {exclude_clause}",
+        (name,) + params_suffix,
+    ).fetchone():
+        return f'This is a duplicate — a product named "{name}" already exists.'
+
+    if conn.execute(
+        f"SELECT id FROM products WHERE techbuy_link = ? COLLATE NOCASE {exclude_clause}",
+        (techbuy_link,) + params_suffix,
+    ).fetchone():
+        return "This is a duplicate — that Tech Buy Link is already used by another product."
+
+    return None
+
+
 def add_product(category_id, name, techbuy_link, other_link):
     name = name.strip()
     techbuy_link = techbuy_link.strip()
@@ -174,6 +194,10 @@ def add_product(category_id, name, techbuy_link, other_link):
         return False, "All fields are required."
     conn = get_connection()
     try:
+        duplicate_error = _find_duplicate_product(conn, name, techbuy_link)
+        if duplicate_error:
+            return False, duplicate_error
+
         conn.execute(
             "INSERT INTO products (category_id, name, techbuy_link, other_link) VALUES (?, ?, ?, ?)",
             (category_id, name, techbuy_link, other_link),
@@ -224,6 +248,10 @@ def update_product(product_id, category_id, name, techbuy_link, other_link):
         return False, "All fields are required."
     conn = get_connection()
     try:
+        duplicate_error = _find_duplicate_product(conn, name, techbuy_link, exclude_id=product_id)
+        if duplicate_error:
+            return False, duplicate_error
+
         existing = conn.execute(
             "SELECT techbuy_link, other_link FROM products WHERE id = ?", (product_id,)
         ).fetchone()
@@ -397,6 +425,21 @@ def get_all_products():
     try:
         return conn.execute(
             "SELECT id, category_id, name, techbuy_link, other_link FROM products"
+        ).fetchall()
+    finally:
+        conn.close()
+
+
+def get_all_products_with_category():
+    conn = get_connection()
+    try:
+        return conn.execute(
+            """
+            SELECT p.name, c.name AS category, p.techbuy_link, p.other_link
+            FROM products p
+            JOIN categories c ON c.id = p.category_id
+            ORDER BY p.name COLLATE NOCASE
+            """
         ).fetchall()
     finally:
         conn.close()

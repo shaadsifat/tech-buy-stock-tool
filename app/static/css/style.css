@@ -504,6 +504,22 @@ tbody td[data-col]:not([data-col="actions"]):active {
     box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
 }
 
+.format-hint {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0.5rem;
+    background: #f8f9fb;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 0.6rem 0.85rem;
+}
+
+.format-hint span {
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: var(--brand-blue-dark);
+}
+
 /* ---------- flash messages ---------- */
 
 .flash-container { margin-bottom: 1rem; }

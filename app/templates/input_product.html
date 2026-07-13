@@ -4,6 +4,7 @@
 <h1>Input Product</h1>
 
 <div class="card content-narrow">
+    <h2 style="margin-top: 0; font-size: 1.05rem;">Add Product</h2>
     <form method="post" action="{{ url_for('products.create_product') }}">
         <div class="form-group">
             <label for="category_id">Category</label>
@@ -36,5 +37,80 @@
 
         <button type="submit" class="btn">Add Product</button>
     </form>
+</div>
+
+<div class="card">
+    <h2 style="margin-top: 0; font-size: 1.05rem;">Bulk Upload</h2>
+    <p class="muted" style="margin-top: -0.4rem;">
+        Upload an Excel (.xlsx) file to add many products at once. The first row must be headers,
+        in this exact order:
+    </p>
+    <div class="format-hint">
+        <span>Category</span>
+        <span>Product Name</span>
+        <span>Tech Buy Link</span>
+        <span>Other website link</span>
+    </div>
+    <p class="muted" style="margin-top: 0.6rem;">
+        Categories that don't exist yet are created automatically.
+    </p>
+
+    <form method="post" action="{{ url_for('products.bulk_upload') }}" enctype="multipart/form-data" class="btn-row" style="margin-top: 1rem; align-items: center;">
+        <input type="file" name="file" accept=".xlsx" required>
+        <button type="submit" class="btn">Upload &amp; Import</button>
+    </form>
+
+    {% if bulk_result %}
+    <div style="margin-top: 1.25rem;">
+        <div class="flash {{ 'flash-error' if bulk_result.failed_rows else 'flash-success' }}">
+            Imported {{ bulk_result.imported }} product(s).
+            {% if bulk_result.failed_rows %}{{ bulk_result.failed_rows|length }} row(s) were not imported — see below.{% endif %}
+            {% if bulk_result.new_categories %}New categories created: {{ bulk_result.new_categories|join(', ') }}.{% endif %}
+        </div>
+
+        {% if bulk_result.failed_rows %}
+        <div class="table-scroll" style="margin-top: 0.75rem;">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Row #</th>
+                        <th>Category</th>
+                        <th>Product Name</th>
+                        <th>Tech Buy Link</th>
+                        <th>Other Link</th>
+                        <th>Reason</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in bulk_result.failed_rows %}
+                    <tr>
+                        <td>{{ row.row }}</td>
+                        <td>{{ row.category }}</td>
+                        <td>{{ row.name }}</td>
+                        <td>{{ row.techbuy_link }}</td>
+                        <td>{{ row.other_link }}</td>
+                        <td>{{ row.reason }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% endif %}
+    </div>
+    {% endif %}
+</div>
+
+<div class="card">
+    <h2 style="margin-top: 0; font-size: 1.05rem;">Export Listed Products</h2>
+    <p class="muted" style="margin-top: -0.4rem;">
+        Download every currently listed product as an Excel file, in the same 4-column format
+        used for Bulk Upload — handy as a backup, or to edit and re-import.
+    </p>
+    <div class="btn-row" style="margin-top: 1rem;">
+        <a href="{{ url_for('products.export_products_template') }}" class="btn btn-secondary">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0-4-4m4 4 4-4M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"></path></svg>
+            Export Products (Excel)
+        </a>
+    </div>
 </div>
 {% endblock %}

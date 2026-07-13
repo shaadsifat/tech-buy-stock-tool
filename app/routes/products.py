@@ -1,9 +1,11 @@
 import json
 
-from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
+from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, send_file
 
 from app import models
+from app import import_products
 from app.config import PAGE_SIZE_CHOICES, DEFAULT_PAGE_SIZE
+from app.export import products_export
 
 products_bp = Blueprint("products", __name__)
 
@@ -44,6 +46,42 @@ def create_product():
     else:
         flash(error, "error")
         return redirect(url_for("products.new_product"))
+
+
+@products_bp.route("/products/bulk-upload", methods=["POST"])
+def bulk_upload():
+    file = request.files.get("file")
+    if not file or not file.filename:
+        flash("Please choose an Excel file to upload.", "error")
+        return redirect(url_for("products.new_product"))
+
+    if not file.filename.lower().endswith(".xlsx"):
+        flash("Please upload a .xlsx Excel file.", "error")
+        return redirect(url_for("products.new_product"))
+
+    try:
+        imported, failed_rows, new_categories = import_products.parse_and_import(file.stream)
+    except Exception:
+        flash("Could not read that file — make sure it's a valid .xlsx Excel file.", "error")
+        return redirect(url_for("products.new_product"))
+
+    categories = models.list_categories()
+    return render_template(
+        "input_product.html",
+        categories=categories,
+        bulk_result={"imported": imported, "failed_rows": failed_rows, "new_categories": new_categories},
+    )
+
+
+@products_bp.route("/products/export-template", methods=["GET"])
+def export_products_template():
+    buffer = products_export.build_workbook()
+    return send_file(
+        buffer,
+        as_attachment=True,
+        download_name=products_export.build_filename(),
+        mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    )
 
 
 @products_bp.route("/products", methods=["GET"])
