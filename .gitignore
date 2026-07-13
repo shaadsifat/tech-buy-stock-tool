@@ -12,3 +12,6 @@ venv/
 # OS junk
 Thumbs.db
 .DS_Store
+
+# Claude Code project-local settings (if any get created here later)
+.claude/
