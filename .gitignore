@@ -1,5 +1,5 @@
-# Local product/category database — private business data, never commit this
-data/*.db
+# WAL sidecar files change constantly while the app runs — not worth tracking,
+# and can conflict across machines. The main app.db file IS tracked (by choice).
 data/*.db-wal
 data/*.db-shm
 
