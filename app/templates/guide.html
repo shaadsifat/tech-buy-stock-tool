@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+{% block title %}Guide{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>Guide</h1>
+    <p>How to use the software, and a short technical overview.</p>
+</div>
+
+<div class="card">
+    <h2 style="margin-top: 0; font-size: 1.05rem;">User Guide</h2>
+
+    <p><strong>Dashboard</strong> — click <em>Start Fetching</em> to pull fresh prices/stock for every
+    listed product. Once done, use <em>Import in Excel File</em> to export the full report, or
+    <em>Remove Previous Fetched Data</em> to clear results before a fresh run. The Quick Summary box
+    is click-to-copy plain text, ready to paste to management. Below that are stat charts and, further
+    down, live counts by status.</p>
+
+    <p><strong>Input Product</strong> — add one product at a time, or use Bulk Upload to import many
+    from an Excel file (Category, Product Name, Tech Buy Link, Other website link — unknown categories
+    are created automatically). Export Listed Products downloads your current list in that same format.</p>
+
+    <p><strong>Product List</strong> — search by name, filter any column via the funnel icon on its
+    header (or the Category / Other Site dropdowns), sort by clicking a header, and pick which columns
+    show via Customize Columns. Click any cell to copy its text.</p>
+
+    <p><strong>Categories</strong> and <strong>Other Websites</strong> — manage categories, and see
+    how many products point to each "Other" site.</p>
+
+    <p><strong>How flagging works:</strong></p>
+    <ul style="margin-top: 0.4rem; padding-left: 1.2rem; line-height: 1.7;">
+        <li><strong>Need Action</strong> = <span class="badge badge-yes" style="margin: 0 2px;">Yes</span>
+        means Tech Buy's price and the Other site's price differ by more than the allowed tolerance —
+        it needs a manual price correction on Tech Buy's store.</li>
+        <li><strong>Reviewed</strong> (checkbox) — tick it once you've manually fixed the price. If
+        Need Action is already <span class="badge badge-no" style="margin: 0 2px;">No</span> (prices
+        already match), the checkbox auto-ticks and locks itself — there's nothing to review.</li>
+        <li>Clicking <em>Start Fetching</em> resets every Reviewed checkbox first, since a fresh fetch
+        makes the old review status outdated.</li>
+        <li>In the exported Excel file, the <strong>Updated</strong> column shows "Yes" if a product is
+        Reviewed, even if the last fetch still shows Need Action = Yes — it reflects your manual fix
+        until the next fetch confirms it.</li>
+    </ul>
+
+    <p style="margin-bottom: 0.4rem;"><strong>Allowed price difference (tolerance) before flagging:</strong>
+    the bracket is picked using Tech Buy's own price (its Sale Price if it has one, else its Regular Price).</p>
+    <div class="table-scroll">
+        <table>
+            <thead>
+                <tr>
+                    <th>Tech Buy Price</th>
+                    <th>Allowed Difference</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr><td>$150 or more</td><td>Up to $3</td></tr>
+                <tr><td>$100 to $149.99</td><td>Up to $1</td></tr>
+                <tr><td>Under $100</td><td>$0 — must match exactly</td></tr>
+            </tbody>
+        </table>
+    </div>
+    <p class="muted" style="margin-top: 0.6rem;">
+        If a product has both a Regular and a Sale price: the <strong>Sale Price</strong> is checked
+        against the table above. The <strong>Regular Price</strong> is checked separately with a flat
+        $100 allowance regardless of price. Need Action = Yes if either check fails.
+        If there's no Sale Price, only the Regular Price is checked against the table above.
+    </p>
+</div>
+
+<div class="card">
+    <h2 style="margin-top: 0; font-size: 1.05rem;">Technical Guide</h2>
+    <ul style="margin-top: 0; padding-left: 1.2rem; line-height: 1.8;">
+        <li><strong>Backend:</strong> Python (Flask), served by the Waitress production WSGI server.</li>
+        <li><strong>Database:</strong> SQLite, a single local file at <code>data/app.db</code> — no
+        external database server needed.</li>
+        <li><strong>Frontend:</strong> server-rendered HTML/CSS with vanilla JavaScript — no framework.</li>
+        <li><strong>Price fetching:</strong> <code>requests</code> + <code>BeautifulSoup</code>, one
+        parser per website, run concurrently across products.</li>
+        <li><strong>Excel import/export:</strong> <code>openpyxl</code>.</li>
+        <li>Runs entirely on the local PC — no data leaves the machine unless you export or push it
+        to GitHub yourself. Version-controlled with Git.</li>
+    </ul>
+</div>
+
+<p class="muted" style="text-align: center; margin-top: 2rem;">
+    Developed By: MD Shaad Uddin Sifat &nbsp;·&nbsp; Designation: Executive, Digital &amp; IT
+    &nbsp;·&nbsp; Company: Alphaeshop &amp; Tech Buy BD
+</p>
+{% endblock %}

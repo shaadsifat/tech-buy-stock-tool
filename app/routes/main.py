@@ -67,3 +67,8 @@ def export_excel():
         download_name=build_filename(),
         mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     )
+
+
+@main_bp.route("/guide", methods=["GET"])
+def guide():
+    return render_template("guide.html")

@@ -6,8 +6,18 @@ from app import models
 from app import import_products
 from app.config import PAGE_SIZE_CHOICES, DEFAULT_PAGE_SIZE
 from app.export import products_export
+from app.scraping import registry
 
 products_bp = Blueprint("products", __name__)
+
+
+def _enrich_with_site_name(products):
+    enriched = []
+    for p in products:
+        row = dict(p)
+        row["other_site"] = registry.get_site_display_name(registry.domain_of(row["other_link"]))
+        enriched.append(row)
+    return enriched
 
 
 def _parse_filters(raw):
@@ -101,6 +111,7 @@ def list_products_view():
     products, total = models.list_products(
         query=query, sort=sort, direction=direction, page=page, page_size=page_size, filters=filters
     )
+    products = _enrich_with_site_name(products)
 
     total_pages = max(1, (total + page_size - 1) // page_size)
     page = min(page, total_pages)
@@ -168,3 +179,14 @@ def delete_product(product_id):
     models.delete_product(product_id)
     flash("Product deleted.", "success")
     return redirect(request.referrer or url_for("products.list_products_view"))
+
+
+@products_bp.route("/products/other-sites", methods=["GET"])
+def other_sites_view():
+    counts = models.get_other_site_counts()
+    sites = [
+        {"domain": domain, "name": registry.get_site_display_name(domain), "count": count}
+        for domain, count in counts.items()
+    ]
+    sites.sort(key=lambda s: s["name"].lower())
+    return render_template("other_sites.html", sites=sites, total=sum(counts.values()))

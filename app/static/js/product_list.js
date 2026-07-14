@@ -8,6 +8,7 @@ document.addEventListener("DOMContentLoaded", function () {
         other_link: "Other Link",
         techbuy_stock: "Stock Status (Tech Buy)",
         other_stock: "Stock Status (Other)",
+        other_site: "Other Site",
         techbuy_regular: "Regular Price",
         techbuy_sale: "Sale Price",
         other_regular: "Regular Price (Other)",
@@ -20,12 +21,12 @@ document.addEventListener("DOMContentLoaded", function () {
 
     const DEFAULT_ORDER = [
         "name", "category", "techbuy_link", "other_link",
-        "techbuy_stock", "other_stock",
+        "techbuy_stock", "other_stock", "other_site",
         "techbuy_regular", "techbuy_sale", "other_regular", "other_sale",
         "regular_diff", "sale_diff",
         "need_action", "fetched_status",
     ];
-    const DEFAULT_HIDDEN = ["techbuy_link", "other_link", "techbuy_stock", "regular_diff", "sale_diff"];
+    const DEFAULT_HIDDEN = ["techbuy_link", "other_link", "techbuy_stock", "regular_diff", "sale_diff", "other_site"];
 
     const table = document.getElementById("product-table");
     if (!table) return;

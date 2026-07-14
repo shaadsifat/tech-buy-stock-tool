@@ -19,8 +19,14 @@ OTHER_SITE_PARSERS = {
     "startech.com.bd": startech.parse,
 }
 
+# Human-friendly name per domain, for display purposes (e.g. the Other Websites
+# page). Anything not listed here just falls back to showing the raw domain.
+SITE_DISPLAY_NAMES = {
+    "startech.com.bd": "StarTech",
+}
 
-def _domain(url):
+
+def domain_of(url):
     netloc = urlparse(url).netloc.lower()
     if netloc.startswith("www."):
         netloc = netloc[4:]
@@ -32,5 +38,9 @@ def get_techbuy_parser(url):
 
 
 def get_other_parser(url):
-    domain = _domain(url)
+    domain = domain_of(url)
     return OTHER_SITE_PARSERS.get(domain, other_sites.parse)
+
+
+def get_site_display_name(domain):
+    return SITE_DISPLAY_NAMES.get(domain, domain)

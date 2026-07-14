@@ -1,4 +1,28 @@
+from urllib.parse import urlparse
+
 from app.db import get_connection
+from app.scraping import registry
+
+
+# ---------- other websites ----------
+
+def get_other_site_counts():
+    """Domain (from each product's other_link) -> how many products use it."""
+    conn = get_connection()
+    try:
+        links = [r["other_link"] for r in conn.execute("SELECT other_link FROM products").fetchall()]
+    finally:
+        conn.close()
+
+    counts = {}
+    for link in links:
+        domain = urlparse(link).netloc.lower()
+        if domain.startswith("www."):
+            domain = domain[4:]
+        if not domain:
+            domain = "(unrecognized link)"
+        counts[domain] = counts.get(domain, 0) + 1
+    return counts
 
 
 # ---------- shareable summary ----------
@@ -297,9 +321,14 @@ FILTERABLE_COLUMNS = {
 
 NULL_FILTER_VALUE = "__NULL__"
 
-# "reviewed" is boolean (products.reviewed), not a text column like the others,
-# so it's filterable but handled separately from FILTERABLE_COLUMNS.
-ALL_FILTER_KEYS = set(FILTERABLE_COLUMNS) | {"reviewed"}
+# "reviewed" is boolean (products.reviewed) and "other_site" is derived from
+# other_link's domain — neither is a plain text column like the others, so both
+# are filterable but handled separately from FILTERABLE_COLUMNS.
+ALL_FILTER_KEYS = set(FILTERABLE_COLUMNS) | {"reviewed", "other_site"}
+
+
+def _other_site_name(other_link):
+    return registry.get_site_display_name(registry.domain_of(other_link))
 
 
 def get_filter_options():
@@ -322,12 +351,24 @@ def get_filter_options():
             options[key] = {"values": values, "has_null": has_null}
 
         options["reviewed"] = {"values": ["Yes", "No"], "has_null": False}
+
+        links = [r["other_link"] for r in conn.execute("SELECT DISTINCT other_link FROM products").fetchall()]
+        site_names = sorted({_other_site_name(link) for link in links if link}, key=str.lower)
+        options["other_site"] = {"values": site_names, "has_null": False}
+
         return options
     finally:
         conn.close()
 
 
-def _build_filter_clauses(filters):
+def _resolve_other_site_product_ids(conn, selected_names):
+    """Product ids whose Other Site display name is in selected_names."""
+    selected = set(selected_names)
+    rows = conn.execute("SELECT id, other_link FROM products").fetchall()
+    return [r["id"] for r in rows if _other_site_name(r["other_link"]) in selected]
+
+
+def _build_filter_clauses(conn, filters):
     clauses = []
     params = []
     for key, values in (filters or {}).items():
@@ -340,6 +381,13 @@ def _build_filter_clauses(filters):
                 placeholders = ",".join("?" for _ in mapped)
                 clauses.append(f"p.reviewed IN ({placeholders})")
                 params.extend(mapped)
+            continue
+
+        if key == "other_site":
+            ids = _resolve_other_site_product_ids(conn, values) or [-1]
+            placeholders = ",".join("?" for _ in ids)
+            clauses.append(f"p.id IN ({placeholders})")
+            params.extend(ids)
             continue
 
         col = FILTERABLE_COLUMNS.get(key)
@@ -372,7 +420,7 @@ def list_products(query="", sort="name", direction="asc", page=1, page_size=20, 
             clauses.append("p.name LIKE ?")
             params.append(f"%{query}%")
 
-        filter_clauses, filter_params = _build_filter_clauses(filters)
+        filter_clauses, filter_params = _build_filter_clauses(conn, filters)
         clauses.extend(filter_clauses)
         params.extend(filter_params)
 

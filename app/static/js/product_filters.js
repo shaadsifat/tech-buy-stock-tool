@@ -13,6 +13,7 @@ document.addEventListener("DOMContentLoaded", function () {
         need_action: "Need Action",
         fetched_status: "Fetched Status",
         reviewed: "Reviewed",
+        other_site: "Other Site",
     };
 
     const NULL_VALUE = "__NULL__";
@@ -164,6 +165,24 @@ document.addEventListener("DOMContentLoaded", function () {
                 filters.category = [categorySelect.value];
             } else {
                 delete filters.category;
+            }
+            navigateWithFilters(filters);
+        });
+    }
+
+    // ---- other site dropdown (single-select convenience filter) ----
+    const otherSiteSelect = document.getElementById("other-site-select");
+    if (otherSiteSelect) {
+        const activeSite = ACTIVE_FILTERS.other_site;
+        if (activeSite && activeSite.length === 1) {
+            otherSiteSelect.value = activeSite[0];
+        }
+        otherSiteSelect.addEventListener("change", function () {
+            const filters = currentFilters();
+            if (otherSiteSelect.value) {
+                filters.other_site = [otherSiteSelect.value];
+            } else {
+                delete filters.other_site;
             }
             navigateWithFilters(filters);
         });

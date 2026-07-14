@@ -44,6 +44,13 @@
             <option value="{{ c.name }}">{{ c.name }}</option>
             {% endfor %}
         </select>
+
+        <select id="other-site-select" class="category-select" aria-label="Filter by other site">
+            <option value="">All Other Sites</option>
+            {% for site_name in filter_options.other_site['values'] %}
+            <option value="{{ site_name }}">{{ site_name }}</option>
+            {% endfor %}
+        </select>
     </div>
 
     <div class="btn-row" style="align-items: center;">
@@ -75,6 +82,7 @@
                 <th data-col="other_link">Other Link</th>
                 <th data-col="techbuy_stock"><span class="th-content">Stock Status (Tech Buy){{ filter_btn('techbuy_stock') }}</span></th>
                 <th data-col="other_stock"><span class="th-content">Stock Status (Other){{ filter_btn('other_stock') }}</span></th>
+                <th data-col="other_site"><span class="th-content">Other Site{{ filter_btn('other_site') }}</span></th>
                 <th data-col="techbuy_regular">Regular Price</th>
                 <th data-col="techbuy_sale">Sale Price</th>
                 <th data-col="other_regular">Regular Price (Other)</th>
@@ -96,6 +104,7 @@
                 <td data-col="other_link"><a href="{{ p.other_link }}" target="_blank" rel="noopener">Link</a></td>
                 <td data-col="techbuy_stock">{{ p.techbuy_stock or '—' }}</td>
                 <td data-col="other_stock">{{ p.other_stock or '—' }}</td>
+                <td data-col="other_site">{{ p.other_site or '—' }}</td>
                 <td data-col="techbuy_regular">{{ price_cell(p.techbuy_regular) }}</td>
                 <td data-col="techbuy_sale">{{ price_cell(p.techbuy_sale) }}</td>
                 <td data-col="other_regular">{{ price_cell(p.other_regular) }}</td>
@@ -157,7 +166,7 @@
                 </td>
             </tr>
             {% else %}
-            <tr data-empty-row><td colspan="16" class="muted">No products found.</td></tr>
+            <tr data-empty-row><td colspan="17" class="muted">No products found.</td></tr>
             {% endfor %}
         </tbody>
     </table>

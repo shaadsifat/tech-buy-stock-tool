@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}Other Websites{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>Other Websites</h1>
+    <p>Every "Other website" domain currently used across your {{ total }} product(s), and how many point to each.</p>
+</div>
+
+<div class="card">
+    <div class="table-scroll">
+    <table>
+        <thead>
+            <tr>
+                <th>Website</th>
+                <th>Domain</th>
+                <th>Products</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for s in sites %}
+            <tr>
+                <td>{{ s.name }}</td>
+                <td class="muted">{{ s.domain }}</td>
+                <td>{{ s.count }}</td>
+            </tr>
+            {% else %}
+            <tr><td colspan="3" class="muted">No products yet.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    </div>
+</div>
+{% endblock %}

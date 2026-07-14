@@ -464,6 +464,18 @@ th[data-col="regular_diff"], th[data-col="sale_diff"] {
     font-variant-numeric: tabular-nums;
 }
 
+/* Same light tint across the Tech Buy / Other pair of each price column,
+   so the two sides are easy to visually match up at a glance. */
+th[data-col="techbuy_regular"], td[data-col="techbuy_regular"],
+th[data-col="other_regular"], td[data-col="other_regular"] {
+    background: #eef5fa;
+}
+
+th[data-col="techbuy_sale"], td[data-col="techbuy_sale"],
+th[data-col="other_sale"], td[data-col="other_sale"] {
+    background: #fef6ec;
+}
+
 tbody td[data-col]:not([data-col="actions"]) {
     cursor: pointer;
 }
