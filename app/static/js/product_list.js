@@ -71,7 +71,7 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     function applyConfig(config) {
-        const fullOrder = config.order.concat(["reviewed", "actions"]);
+        const fullOrder = ["select"].concat(config.order, ["reviewed", "actions"]);
 
         reorderRow(headRow, fullOrder);
         bodyRows().forEach((row) => reorderRow(row, fullOrder));
@@ -82,7 +82,7 @@ document.addEventListener("DOMContentLoaded", function () {
         const hiddenSet = new Set(config.hidden);
         table.querySelectorAll("[data-col]").forEach((cell) => {
             const id = cell.getAttribute("data-col");
-            if (id === "actions" || id === "reviewed") return;
+            if (id === "select" || id === "actions" || id === "reviewed") return;
             cell.style.display = hiddenSet.has(id) ? "none" : "";
         });
     }
@@ -190,7 +190,7 @@ document.addEventListener("DOMContentLoaded", function () {
     });
 
     // ---- click-to-copy cells ----
-    const NO_COPY_COLUMNS = ["actions", "reviewed", "techbuy_link", "other_link"];
+    const NO_COPY_COLUMNS = ["select", "actions", "reviewed", "techbuy_link", "other_link"];
     let copyToast = null;
     let copyToastTimer = null;
 

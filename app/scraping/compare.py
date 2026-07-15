@@ -7,13 +7,16 @@ def get_tolerance(price):
     return 0
 
 
-def evaluate(tb_regular, tb_sale, other_regular, other_sale):
+def evaluate(tb_regular, tb_sale, other_regular, other_sale, tb_stock=None, other_stock=None):
     """Returns (need_action, updated) as 'Yes'/'No' strings.
 
-    Rules:
+    Need Action = Yes if EITHER:
+    - the prices differ by more than the allowed tolerance, or
+    - the stock status differs between Tech Buy and the Other site.
+
+    Price rules:
     - If Tech Buy has a sale price and Other has a sale price: sale vs sale uses the
       tiered tolerance (primary check); regular vs regular gets a flat $100 tolerance.
-      Need Action = Yes if either check fails.
     - Otherwise: compare regular vs regular using the tiered tolerance (based on
       Tech Buy's regular price).
     """
@@ -21,9 +24,12 @@ def evaluate(tb_regular, tb_sale, other_regular, other_sale):
         sale_tolerance = get_tolerance(tb_sale)
         sale_ok = abs(tb_sale - other_sale) <= sale_tolerance
         regular_ok = abs(tb_regular - other_regular) <= 100
-        ok = sale_ok and regular_ok
+        price_ok = sale_ok and regular_ok
     else:
         tolerance = get_tolerance(tb_regular)
-        ok = abs(tb_regular - other_regular) <= tolerance
+        price_ok = abs(tb_regular - other_regular) <= tolerance
 
+    stock_ok = tb_stock is not None and tb_stock == other_stock
+
+    ok = price_ok and stock_ok
     return ("No", "Yes") if ok else ("Yes", "No")

@@ -590,39 +590,6 @@ tbody td[data-col]:not([data-col="actions"]):active {
     box-shadow: 0 0 0 3px rgba(247, 148, 29, 0.15);
 }
 
-.segmented-wrap {
-    display: flex;
-    align-items: center;
-    gap: 0.6rem;
-}
-
-.segmented {
-    display: inline-flex;
-    border: 1px solid var(--border);
-    border-radius: var(--radius-sm);
-    overflow: hidden;
-}
-
-.segmented-item {
-    padding: 0.45rem 0.9rem;
-    font-size: 0.86rem;
-    font-weight: 600;
-    color: var(--muted);
-    text-decoration: none;
-    background: #fff;
-    border-right: 1px solid var(--border);
-    transition: background 0.15s ease, color 0.15s ease;
-}
-
-.segmented-item:last-child { border-right: none; }
-
-.segmented-item:hover { background: #f1f5f9; color: var(--text); }
-
-.segmented-item.active {
-    background: var(--accent);
-    color: #fff;
-}
-
 /* ---------- pagination ---------- */
 
 .pagination {
@@ -909,6 +876,55 @@ tbody tr.row-reviewed:hover {
     height: 16px;
     cursor: pointer;
     accent-color: var(--accent);
+}
+
+/* ---------- bulk select ---------- */
+
+.select-cell {
+    text-align: center;
+    cursor: default !important;
+    width: 34px;
+}
+
+.select-cell input[type="checkbox"],
+.row-select-checkbox {
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+    accent-color: var(--accent);
+}
+
+.bulk-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+    background: #fff;
+    border: 1px solid var(--accent);
+    border-radius: var(--radius);
+    padding: 0.7rem 1rem;
+    margin-bottom: 1rem;
+    box-shadow: var(--shadow-md);
+    position: sticky;
+    top: 0.75rem;
+    z-index: 20;
+    animation: fadeInUp 0.2s ease;
+}
+
+.bulk-bar-count {
+    font-weight: 700;
+    font-size: 0.9rem;
+    color: var(--brand-blue-dark);
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.bulk-bar-actions {
+    display: flex;
+    gap: 0.6rem;
+    flex-wrap: wrap;
+    align-items: center;
 }
 
 /* ---------- responsive ---------- */

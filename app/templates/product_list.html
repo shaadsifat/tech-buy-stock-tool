@@ -59,16 +59,26 @@
         {% endif %}
         <button type="button" id="customize-columns-btn" class="btn btn-secondary">Customize Columns</button>
 
-        <div class="segmented-wrap">
-            <span class="muted">Show</span>
-            <div class="segmented">
-                {% for choice in page_size_choices %}
-                <a href="{{ url_for('products.list_products_view', q=query, sort=sort, dir=direction, filters=filters_json, size=choice, page=1) }}"
-                   class="segmented-item {{ 'active' if choice == page_size else '' }}">{{ choice }}</a>
-                {% endfor %}
-            </div>
-        </div>
+        <span class="muted">Show</span>
+        <select id="page-size-select" class="category-select" aria-label="Products per page">
+            {% for choice in page_size_choices %}
+            <option value="{{ choice }}" {{ 'selected' if choice == page_size else '' }}>{{ choice }}</option>
+            {% endfor %}
+        </select>
     </div>
+</div>
+
+<div id="bulk-action-bar" class="bulk-bar" style="display: none;">
+    <span id="bulk-selected-count" class="bulk-bar-count">0 selected</span>
+    <div class="bulk-bar-actions">
+        <button type="button" id="bulk-mark-reviewed-btn" class="btn btn-secondary">Mark as Reviewed</button>
+        <button type="button" id="bulk-refetch-btn" class="btn btn-secondary">Re-Fetch Selected</button>
+        <button type="button" id="bulk-export-btn" class="btn btn-secondary">Export Selected</button>
+        <button type="button" id="bulk-delete-btn" class="btn btn-danger">Delete Permanently</button>
+    </div>
+    <button type="button" id="bulk-clear-btn" class="icon-btn" title="Clear selection" aria-label="Clear selection">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"></path></svg>
+    </button>
 </div>
 
 <div class="card">
@@ -76,6 +86,7 @@
     <table id="product-table">
         <thead>
             <tr>
+                <th data-col="select" class="select-cell"><input type="checkbox" id="select-all-checkbox" aria-label="Select all"></th>
                 <th data-col="name">{{ sort_link('Product Name', 'name') }}</th>
                 <th data-col="category"><span class="th-content">{{ sort_link('Category', 'category') }}{{ filter_btn('category') }}</span></th>
                 <th data-col="techbuy_link">Tech Buy Link</th>
@@ -98,6 +109,7 @@
         <tbody>
             {% for p in products %}
             <tr data-product-row data-product-id="{{ p.id }}" class="{{ 'row-reviewed' if p.reviewed else '' }}">
+                <td data-col="select" class="select-cell"><input type="checkbox" class="row-select-checkbox" data-product-id="{{ p.id }}" aria-label="Select {{ p.name }}"></td>
                 <td data-col="name" title="{{ p.name }}" data-full-text="{{ p.name }}">{{ p.name | truncate(25, True, '...', 0) }}</td>
                 <td data-col="category">{{ p.category }}</td>
                 <td data-col="techbuy_link"><a href="{{ p.techbuy_link }}" target="_blank" rel="noopener">Link</a></td>
@@ -145,7 +157,7 @@
                 </td>
                 <td data-col="reviewed" class="reviewed-cell">
                     {% if p.need_action == 'No' %}
-                        <input type="checkbox" class="reviewed-checkbox" data-product-id="{{ p.id }}" checked disabled title="Locked — no price correction needed">
+                        <input type="checkbox" class="reviewed-checkbox" data-product-id="{{ p.id }}" checked disabled title="Locked — price and stock status both already match">
                     {% else %}
                         <input type="checkbox" class="reviewed-checkbox" data-product-id="{{ p.id }}" {{ 'checked' if p.reviewed else '' }} aria-label="Mark reviewed">
                     {% endif %}
@@ -166,7 +178,7 @@
                 </td>
             </tr>
             {% else %}
-            <tr data-empty-row><td colspan="17" class="muted">No products found.</td></tr>
+            <tr data-empty-row><td colspan="18" class="muted">No products found.</td></tr>
             {% endfor %}
         </tbody>
     </table>
@@ -227,4 +239,5 @@
 {% block scripts %}
 <script src="{{ url_for('static', filename='js/product_list.js') }}"></script>
 <script src="{{ url_for('static', filename='js/product_filters.js') }}"></script>
+<script src="{{ url_for('static', filename='js/product_bulk.js') }}"></script>
 {% endblock %}

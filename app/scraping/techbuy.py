@@ -69,6 +69,8 @@ def parse(url):
     html = fetch_html(url)
     soup = BeautifulSoup(html, "html.parser")
 
+    stock = _parse_stock(soup)
+
     price_block = soup.select_one(".productView-price") or soup
     price_container = price_block.select_one(".price")
     on_sale = price_container is not None and "price--on-sale" in price_container.get("class", [])
@@ -88,9 +90,7 @@ def parse(url):
         regular = parse_amount_text(regular_span.get_text() if regular_span else None)
         sale = None
 
-    if regular is None:
-        raise RuntimeError(f"Could not find Tech Buy regular price on {url}")
-
-    stock = _parse_stock(soup)
+    if regular is None and stock is None:
+        raise RuntimeError(f"Could not find Tech Buy price or stock status on {url}")
 
     return FetchResult(regular=regular, sale=sale, stock=stock)

@@ -23,17 +23,32 @@
     header (or the Category / Other Site dropdowns), sort by clicking a header, and pick which columns
     show via Customize Columns. Click any cell to copy its text.</p>
 
+    <p><strong>Bulk actions</strong> — tick the checkbox on the left of any row, or use the checkbox
+    in the header to select every row currently shown on the page. A bar appears with:</p>
+    <ul style="margin-top: 0.4rem; padding-left: 1.2rem; line-height: 1.7;">
+        <li><strong>Mark as Reviewed</strong> — ticks Reviewed for the selected products (skips any
+        already auto-locked because Need Action is No).</li>
+        <li><strong>Re-Fetch Selected</strong> — runs a fresh price/stock fetch for only the selected
+        products, instead of the full list.</li>
+        <li><strong>Export Selected</strong> — downloads an Excel file containing only the selected
+        products, in the same format as the full export.</li>
+        <li><strong>Delete Permanently</strong> — removes the selected products (and their fetched
+        data) for good. Asks for confirmation first, since this can't be undone.</li>
+    </ul>
+
     <p><strong>Categories</strong> and <strong>Other Websites</strong> — manage categories, and see
     how many products point to each "Other" site.</p>
 
     <p><strong>How flagging works:</strong></p>
     <ul style="margin-top: 0.4rem; padding-left: 1.2rem; line-height: 1.7;">
         <li><strong>Need Action</strong> = <span class="badge badge-yes" style="margin: 0 2px;">Yes</span>
-        means Tech Buy's price and the Other site's price differ by more than the allowed tolerance —
-        it needs a manual price correction on Tech Buy's store.</li>
-        <li><strong>Reviewed</strong> (checkbox) — tick it once you've manually fixed the price. If
-        Need Action is already <span class="badge badge-no" style="margin: 0 2px;">No</span> (prices
-        already match), the checkbox auto-ticks and locks itself — there's nothing to review.</li>
+        means either the price differs by more than the allowed tolerance, <strong>or</strong> Tech
+        Buy's stock status doesn't match the Other site's — either way, something needs a manual fix
+        on Tech Buy's store.</li>
+        <li><strong>Reviewed</strong> (checkbox) — tick it once you've manually fixed the issue. It
+        auto-ticks and locks itself when Need Action is already
+        <span class="badge badge-no" style="margin: 0 2px;">No</span> — nothing to review. If Need
+        Action is Yes (price or stock mismatch), it stays editable so you can tick it once fixed.</li>
         <li>Clicking <em>Start Fetching</em> resets every Reviewed checkbox first, since a fresh fetch
         makes the old review status outdated.</li>
         <li>In the exported Excel file, the <strong>Updated</strong> column shows "Yes" if a product is
@@ -61,8 +76,17 @@
     <p class="muted" style="margin-top: 0.6rem;">
         If a product has both a Regular and a Sale price: the <strong>Sale Price</strong> is checked
         against the table above. The <strong>Regular Price</strong> is checked separately with a flat
-        $100 allowance regardless of price. Need Action = Yes if either check fails.
-        If there's no Sale Price, only the Regular Price is checked against the table above.
+        $100 allowance regardless of price. If there's no Sale Price, only the Regular Price is
+        checked against the table above.
+    </p>
+    <p class="muted" style="margin-top: 0.4rem;">
+        On top of the price check, <strong>Stock Status (Tech Buy)</strong> and
+        <strong>Stock Status (Other)</strong> must also be identical (e.g. both "In Stock"). Need
+        Action = Yes if the price check fails, the stock statuses don't match, or both.
+    </p>
+    <p class="muted" style="margin-top: 0.4rem;">
+        Exception: if <strong>both</strong> sides show "Out of Stock", price is skipped entirely —
+        Need Action = No automatically, since nobody has it in stock to compare.
     </p>
 </div>
 

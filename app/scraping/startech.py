@@ -25,8 +25,9 @@ value is unreliable (confirmed by example data: it doesn't even match the separa
 - If no "Regular Price" row exists: Regular Price = the "Price" cell's value, no Sale
   Price.
 - Some out-of-stock/discontinued products show "To be announced" instead of a number
-  (no "Regular Price" row either) — this fails to parse and is treated as a fetch
-  problem (raises), same as any other unparseable price.
+  (no "Regular Price" row either). When that happens but stock status IS readable,
+  we still return it — Regular/Sale Price just stay blank. Only raises (treated as a
+  fetch problem) when NEITHER price nor stock could be found at all.
 
 Status cell values seen so far: "In Stock", "Sold Out" (mapped to "Out of Stock").
 """
@@ -60,6 +61,8 @@ def parse(url):
     html = fetch_html(url)
     soup = BeautifulSoup(html, "html.parser")
 
+    stock = _parse_stock(soup)
+
     price_cell = soup.select_one(".product-price")
     regular_row = soup.select_one(".product-regular-price")
 
@@ -70,9 +73,7 @@ def parse(url):
         regular = parse_amount_text(_price_cell_text(price_cell)) if price_cell is not None else None
         sale = None
 
-    if regular is None:
-        raise RuntimeError(f"Could not find StarTech regular price on {url}")
-
-    stock = _parse_stock(soup)
+    if regular is None and stock is None:
+        raise RuntimeError(f"Could not find StarTech price or stock status on {url}")
 
     return FetchResult(regular=regular, sale=sale, stock=stock)

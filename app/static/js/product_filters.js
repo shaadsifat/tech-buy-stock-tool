@@ -187,4 +187,15 @@ document.addEventListener("DOMContentLoaded", function () {
             navigateWithFilters(filters);
         });
     }
+
+    // ---- page size dropdown ----
+    const pageSizeSelect = document.getElementById("page-size-select");
+    if (pageSizeSelect) {
+        pageSizeSelect.addEventListener("change", function () {
+            const url = new URL(window.location.href);
+            url.searchParams.set("size", pageSizeSelect.value);
+            url.searchParams.set("page", "1");
+            window.location.href = url.toString();
+        });
+    }
 });

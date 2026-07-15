@@ -22,8 +22,8 @@ HEADERS = [
 ]
 
 
-def build_workbook():
-    rows = models.get_export_data()
+def build_workbook(product_ids=None):
+    rows = models.get_export_data_for(product_ids) if product_ids else models.get_export_data()
 
     wb = Workbook()
     ws = wb.active

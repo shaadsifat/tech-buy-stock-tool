@@ -15,7 +15,8 @@ def get_status():
         return dict(_state)
 
 
-def start_fetch():
+def start_fetch(product_ids=None):
+    """product_ids=None fetches every product; a list scopes the run to just those."""
     with _lock:
         if _state["running"]:
             return False
@@ -23,9 +24,12 @@ def start_fetch():
         _state["done"] = 0
         _state["total"] = 0
 
-    models.reset_all_reviewed()
+    if product_ids:
+        models.reset_reviewed_for(product_ids)
+    else:
+        models.reset_all_reviewed()
 
-    thread = threading.Thread(target=_run_fetch, daemon=True)
+    thread = threading.Thread(target=_run_fetch, args=(product_ids,), daemon=True)
     thread.start()
     return True
 
@@ -61,10 +65,22 @@ def _fetch_one_product(product):
     need_action = None
     updated = None
     if not techbuy_failed and not other_failed:
-        need_action, updated = evaluate(
-            techbuy_result.regular, techbuy_result.sale,
-            other_result.regular, other_result.sale,
-        )
+        tb_stock = techbuy_result.stock
+        ot_stock = other_result.stock
+
+        if tb_stock == "Out of Stock" and ot_stock == "Out of Stock":
+            # nobody has it — price differences don't matter, nothing to action
+            need_action, updated = "No", "Yes"
+        elif tb_stock is not None and ot_stock is not None and tb_stock != ot_stock:
+            # stock status disagrees between the two sites — flag it directly,
+            # regardless of whether either side even has a price
+            need_action, updated = "Yes", "No"
+        elif techbuy_result.regular is not None and other_result.regular is not None:
+            need_action, updated = evaluate(
+                techbuy_result.regular, techbuy_result.sale,
+                other_result.regular, other_result.sale,
+                techbuy_result.stock, other_result.stock,
+            )
 
     data = {
         "techbuy_regular": techbuy_result.regular if techbuy_result else None,
@@ -80,8 +96,8 @@ def _fetch_one_product(product):
     models.upsert_fetch_result(product["id"], data)
 
 
-def _run_fetch():
-    products = models.get_all_products()
+def _run_fetch(product_ids=None):
+    products = models.get_products_by_ids(product_ids) if product_ids else models.get_all_products()
 
     with _lock:
         _state["total"] = len(products)

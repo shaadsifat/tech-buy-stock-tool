@@ -6,9 +6,21 @@ from app import models
 from app import import_products
 from app.config import PAGE_SIZE_CHOICES, DEFAULT_PAGE_SIZE
 from app.export import products_export
+from app.export.excel_export import build_workbook, build_filename
 from app.scraping import registry
+from app.scraping import runner
 
 products_bp = Blueprint("products", __name__)
+
+
+def _parse_ids(values):
+    ids = []
+    for v in values:
+        try:
+            ids.append(int(v))
+        except (TypeError, ValueError):
+            continue
+    return ids
 
 
 def _enrich_with_site_name(products):
@@ -190,3 +202,43 @@ def other_sites_view():
     ]
     sites.sort(key=lambda s: s["name"].lower())
     return render_template("other_sites.html", sites=sites, total=sum(counts.values()))
+
+
+@products_bp.route("/products/bulk-delete", methods=["POST"])
+def bulk_delete():
+    data = request.get_json(silent=True) or {}
+    ids = _parse_ids(data.get("ids", []))
+    deleted = models.delete_products(ids)
+    return jsonify({"ok": True, "deleted": deleted})
+
+
+@products_bp.route("/products/bulk-refetch", methods=["POST"])
+def bulk_refetch():
+    data = request.get_json(silent=True) or {}
+    ids = _parse_ids(data.get("ids", []))
+    if not ids:
+        return jsonify({"ok": False, "error": "No products selected."}), 400
+    started = runner.start_fetch(product_ids=ids)
+    if not started:
+        return jsonify({"ok": False, "error": "A fetch is already running."}), 409
+    return jsonify({"ok": True})
+
+
+@products_bp.route("/products/bulk-mark-reviewed", methods=["POST"])
+def bulk_mark_reviewed():
+    data = request.get_json(silent=True) or {}
+    ids = _parse_ids(data.get("ids", []))
+    updated, skipped = models.mark_reviewed_bulk(ids)
+    return jsonify({"ok": True, "updated": updated, "skipped_locked": skipped})
+
+
+@products_bp.route("/products/bulk-export", methods=["POST"])
+def bulk_export():
+    ids = _parse_ids(request.form.getlist("ids"))
+    buffer = build_workbook(product_ids=ids) if ids else build_workbook()
+    return send_file(
+        buffer,
+        as_attachment=True,
+        download_name=build_filename(),
+        mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    )

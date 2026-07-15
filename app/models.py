@@ -233,7 +233,8 @@ def add_product(category_id, name, techbuy_link, other_link):
 
 
 def is_reviewed_locked(product_id):
-    """Reviewed is auto-ticked and locked when Need Action is No — nothing to review."""
+    """Reviewed is auto-ticked and locked when Need Action is No — nothing to review.
+    (Need Action itself already accounts for both price and stock status matching.)"""
     conn = get_connection()
     try:
         row = conn.execute(
@@ -468,6 +469,96 @@ def delete_product(product_id):
         conn.close()
 
 
+def get_products_by_ids(ids):
+    if not ids:
+        return []
+    conn = get_connection()
+    try:
+        placeholders = ",".join("?" for _ in ids)
+        return conn.execute(
+            f"SELECT id, category_id, name, techbuy_link, other_link FROM products WHERE id IN ({placeholders})",
+            ids,
+        ).fetchall()
+    finally:
+        conn.close()
+
+
+def delete_products(ids):
+    if not ids:
+        return 0
+    conn = get_connection()
+    try:
+        placeholders = ",".join("?" for _ in ids)
+        conn.execute(f"DELETE FROM fetch_results WHERE product_id IN ({placeholders})", ids)
+        cur = conn.execute(f"DELETE FROM products WHERE id IN ({placeholders})", ids)
+        conn.commit()
+        return cur.rowcount
+    finally:
+        conn.close()
+
+
+def reset_reviewed_for(ids):
+    if not ids:
+        return
+    conn = get_connection()
+    try:
+        placeholders = ",".join("?" for _ in ids)
+        conn.execute(f"UPDATE products SET reviewed = 0 WHERE id IN ({placeholders})", ids)
+        conn.commit()
+    finally:
+        conn.close()
+
+
+def mark_reviewed_bulk(ids):
+    """Sets reviewed=1 for the given ids, skipping any that are locked
+    (Need Action = No, already auto-reviewed). Returns (updated, skipped_locked)."""
+    if not ids:
+        return 0, 0
+    conn = get_connection()
+    try:
+        placeholders = ",".join("?" for _ in ids)
+        rows = conn.execute(
+            f"SELECT product_id, need_action FROM fetch_results WHERE product_id IN ({placeholders})",
+            ids,
+        ).fetchall()
+        locked_ids = {r["product_id"] for r in rows if r["need_action"] == "No"}
+        updatable = [i for i in ids if i not in locked_ids]
+        if updatable:
+            up_placeholders = ",".join("?" for _ in updatable)
+            conn.execute(f"UPDATE products SET reviewed = 1 WHERE id IN ({up_placeholders})", updatable)
+            conn.commit()
+        return len(updatable), len(ids) - len(updatable)
+    finally:
+        conn.close()
+
+
+def get_export_data_for(ids):
+    if not ids:
+        return []
+    conn = get_connection()
+    try:
+        placeholders = ",".join("?" for _ in ids)
+        return conn.execute(
+            f"""
+            SELECT p.name, c.name AS category, p.techbuy_link, p.other_link,
+                   fr.techbuy_stock, fr.other_stock,
+                   fr.techbuy_regular, fr.techbuy_sale,
+                   fr.other_regular, fr.other_sale,
+                   fr.need_action,
+                   CASE WHEN p.reviewed = 1 AND fr.product_id IS NOT NULL THEN 'Yes' ELSE fr.updated END AS updated,
+                   fr.fetched_status
+            FROM products p
+            JOIN categories c ON c.id = p.category_id
+            LEFT JOIN fetch_results fr ON fr.product_id = p.id
+            WHERE p.id IN ({placeholders})
+            ORDER BY p.name COLLATE NOCASE
+            """,
+            ids,
+        ).fetchall()
+    finally:
+        conn.close()
+
+
 def get_all_products():
     conn = get_connection()
     try:
@@ -533,6 +624,7 @@ def upsert_fetch_result(product_id, data):
 
         if data.get("need_action") == "No":
             # nothing to review — auto-tick and lock it
+            # (Need Action already accounts for both price and stock status matching)
             conn.execute("UPDATE products SET reviewed = 1 WHERE id = ?", (product_id,))
 
         conn.commit()
