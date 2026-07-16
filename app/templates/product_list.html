@@ -68,6 +68,11 @@
     </div>
 </div>
 
+<div id="fetch-running-bar" class="bulk-bar" style="display: none;">
+    <span id="fetch-running-text" class="bulk-bar-count">Fetching…</span>
+    <button type="button" id="product-list-stop-fetch-btn" class="btn btn-danger">Stop Fetching</button>
+</div>
+
 <div id="bulk-action-bar" class="bulk-bar" style="display: none;">
     <span id="bulk-selected-count" class="bulk-bar-count">0 selected</span>
     <div class="bulk-bar-actions">
@@ -108,7 +113,7 @@
         </thead>
         <tbody>
             {% for p in products %}
-            <tr data-product-row data-product-id="{{ p.id }}" class="{{ 'row-reviewed' if p.reviewed else '' }}">
+            <tr data-product-row data-product-id="{{ p.id }}" data-fetched-at="{{ p.fetched_at or '' }}" class="{{ 'row-reviewed' if p.reviewed else '' }}">
                 <td data-col="select" class="select-cell"><input type="checkbox" class="row-select-checkbox" data-product-id="{{ p.id }}" aria-label="Select {{ p.name }}"></td>
                 <td data-col="name" title="{{ p.name }}" data-full-text="{{ p.name }}">{{ p.name | truncate(25, True, '...', 0) }}</td>
                 <td data-col="category">{{ p.category }}</td>
@@ -240,4 +245,5 @@
 <script src="{{ url_for('static', filename='js/product_list.js') }}"></script>
 <script src="{{ url_for('static', filename='js/product_filters.js') }}"></script>
 <script src="{{ url_for('static', filename='js/product_bulk.js') }}"></script>
+<script src="{{ url_for('static', filename='js/product_live_update.js') }}"></script>
 {% endblock %}

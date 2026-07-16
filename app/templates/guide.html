@@ -9,11 +9,23 @@
 <div class="card">
     <h2 style="margin-top: 0; font-size: 1.05rem;">User Guide</h2>
 
+    <p><strong>Sidebar</strong> — click the small arrow on its edge to collapse it into a thin
+    icon-only ribbon (the logo switches to the favicon to fit), or click again to expand it. Your
+    choice is remembered across visits.</p>
+
     <p><strong>Dashboard</strong> — click <em>Start Fetching</em> to pull fresh prices/stock for every
-    listed product. Once done, use <em>Import in Excel File</em> to export the full report, or
+    listed product. While a fetch is running, <em>Stop Fetching</em> appears — clicking it halts things
+    almost immediately (anything already mid-request finishes, anything not yet started is skipped).
+    The 5 stat cards, the charts, and the Quick Summary box all update live while fetching, with no need
+    to reload the page. Once done, use <em>Import in Excel File</em> to export the full report, or
     <em>Remove Previous Fetched Data</em> to clear results before a fresh run. The Quick Summary box
-    is click-to-copy plain text, ready to paste to management. Below that are stat charts and, further
-    down, live counts by status.</p>
+    is click-to-copy plain text, ready to paste to management.</p>
+    <p class="muted" style="margin-top: -0.5rem;">
+        The stat cards: <strong>Total Products</strong>, <strong>Categories</strong>,
+        <strong>Need Action</strong>, <strong>Fetch Problems</strong> (TechBuy Prob + Other Prob + Both
+        Prob combined — products where a fetch failed on one or both sides), and
+        <strong>Perfectly Fetched</strong> (products fetched cleanly with no problems at all).
+    </p>
 
     <p><strong>Input Product</strong> — add one product at a time, or use Bulk Upload to import many
     from an Excel file (Category, Product Name, Tech Buy Link, Other website link — unknown categories
@@ -21,7 +33,10 @@
 
     <p><strong>Product List</strong> — search by name, filter any column via the funnel icon on its
     header (or the Category / Other Site dropdowns), sort by clicking a header, and pick which columns
-    show via Customize Columns. Click any cell to copy its text.</p>
+    show via Customize Columns. Click any cell to copy its text. Column filters are remembered across
+    visits — they'll still be applied next time you open this page, even after navigating away.
+    Rows update live as a fetch progresses (no reload needed), whether it was started from here or from
+    the Dashboard, and a Stop Fetching control appears here too whenever one is running.</p>
 
     <p><strong>Bulk actions</strong> — tick the checkbox on the left of any row, or use the checkbox
     in the header to select every row currently shown on the page. A bar appears with:</p>
@@ -98,7 +113,9 @@
         external database server needed.</li>
         <li><strong>Frontend:</strong> server-rendered HTML/CSS with vanilla JavaScript — no framework.</li>
         <li><strong>Price fetching:</strong> <code>requests</code> + <code>BeautifulSoup</code>, one
-        parser per website, run concurrently across products.</li>
+        parser per website, run concurrently across products. Each site gets a polite, randomized gap
+        between requests (a single manual re-fetch of one product skips this, since it's not a burst)
+        to avoid being flagged as bot traffic.</li>
         <li><strong>Excel import/export:</strong> <code>openpyxl</code>.</li>
         <li>Runs entirely on the local PC — no data leaves the machine unless you export or push it
         to GitHub yourself. Version-controlled with Git.</li>

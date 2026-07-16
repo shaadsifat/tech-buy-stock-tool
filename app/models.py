@@ -84,10 +84,19 @@ def get_dashboard_stats():
         need_action = conn.execute(
             "SELECT COUNT(*) AS c FROM fetch_results WHERE need_action = 'Yes'"
         ).fetchone()["c"]
+        fetch_problems = conn.execute(
+            "SELECT COUNT(*) AS c FROM fetch_results WHERE fetched_status IN "
+            "('TechBuy Prob', 'Other Prob', 'Both Prob')"
+        ).fetchone()["c"]
+        perfectly_fetched = conn.execute(
+            "SELECT COUNT(*) AS c FROM fetch_results WHERE fetched_status = 'Fetched'"
+        ).fetchone()["c"]
         return {
             "total_products": total_products,
             "total_categories": total_categories,
             "need_action": need_action,
+            "fetch_problems": fetch_problems,
+            "perfectly_fetched": perfectly_fetched,
         }
     finally:
         conn.close()
@@ -443,7 +452,7 @@ def list_products(query="", sort="name", direction="asc", page=1, page_size=20, 
             SELECT p.id, p.name, c.name AS category, p.techbuy_link, p.other_link, p.reviewed,
                    fr.techbuy_regular, fr.techbuy_sale, fr.techbuy_stock,
                    fr.other_regular, fr.other_sale, fr.other_stock,
-                   fr.need_action, fr.fetched_status
+                   fr.need_action, fr.fetched_status, fr.fetched_at
             FROM products p
             JOIN categories c ON c.id = p.category_id
             LEFT JOIN fetch_results fr ON fr.product_id = p.id
@@ -477,6 +486,29 @@ def get_products_by_ids(ids):
         placeholders = ",".join("?" for _ in ids)
         return conn.execute(
             f"SELECT id, category_id, name, techbuy_link, other_link FROM products WHERE id IN ({placeholders})",
+            ids,
+        ).fetchall()
+    finally:
+        conn.close()
+
+
+def get_row_updates_for(ids):
+    """Latest fetch/reviewed state for the given ids, for the Product List's live-update poll."""
+    if not ids:
+        return []
+    conn = get_connection()
+    try:
+        placeholders = ",".join("?" for _ in ids)
+        return conn.execute(
+            f"""
+            SELECT p.id, p.reviewed,
+                   fr.techbuy_regular, fr.techbuy_sale, fr.techbuy_stock,
+                   fr.other_regular, fr.other_sale, fr.other_stock,
+                   fr.need_action, fr.fetched_status, fr.fetched_at
+            FROM products p
+            LEFT JOIN fetch_results fr ON fr.product_id = p.id
+            WHERE p.id IN ({placeholders})
+            """,
             ids,
         ).fetchall()
     finally:

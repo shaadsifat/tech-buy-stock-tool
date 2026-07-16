@@ -51,6 +51,25 @@ def fetch_status():
     return jsonify(runner.get_status())
 
 
+@main_bp.route("/fetch/stop", methods=["POST"])
+def fetch_stop():
+    stopped = runner.stop_fetch()
+    if not stopped:
+        return jsonify({"ok": False, "error": "No fetch is currently running."}), 409
+    return jsonify({"ok": True})
+
+
+@main_bp.route("/dashboard/stats", methods=["GET"])
+def dashboard_stats():
+    return jsonify({
+        "ok": True,
+        "fetched_count": models.count_fetch_results(),
+        "stats": models.get_dashboard_stats(),
+        "report": models.get_dashboard_report(),
+        "summary_text": _build_summary_text(models.get_summary_stats()),
+    })
+
+
 @main_bp.route("/fetch/clear", methods=["POST"])
 def fetch_clear():
     models.clear_fetch_results()

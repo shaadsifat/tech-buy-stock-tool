@@ -232,6 +232,16 @@ def bulk_mark_reviewed():
     return jsonify({"ok": True, "updated": updated, "skipped_locked": skipped})
 
 
+@products_bp.route("/products/row-updates", methods=["POST"])
+def row_updates():
+    """Latest fetch/reviewed state for the given ids, polled by the Product List
+    page while a fetch is running so it can patch rows in place without a reload."""
+    data = request.get_json(silent=True) or {}
+    ids = _parse_ids(data.get("ids", []))
+    rows = models.get_row_updates_for(ids)
+    return jsonify({"ok": True, "rows": [dict(r) for r in rows]})
+
+
 @products_bp.route("/products/bulk-export", methods=["POST"])
 def bulk_export():
     ids = _parse_ids(request.form.getlist("ids"))

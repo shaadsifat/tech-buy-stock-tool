@@ -124,7 +124,10 @@ document.addEventListener("DOMContentLoaded", function () {
                     refetchBtn.textContent = "Fetching " + status.done + "/" + status.total + "...";
                     setTimeout(function () { pollRefetch(originalText); }, 1000);
                 } else {
-                    window.location.reload();
+                    // rows update live as each product finishes (see product_live_update.js) —
+                    // no reload needed, just restore the button
+                    refetchBtn.disabled = false;
+                    refetchBtn.textContent = originalText;
                 }
             });
     }

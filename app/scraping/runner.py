@@ -3,11 +3,13 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from app import models
 from app.config import FETCH_MAX_WORKERS
+from app.scraping import base
 from app.scraping import registry
 from app.scraping.compare import evaluate
 
 _lock = threading.Lock()
-_state = {"running": False, "done": 0, "total": 0}
+_state = {"running": False, "done": 0, "total": 0, "stopped": False}
+_stop_event = threading.Event()
 
 
 def get_status():
@@ -23,6 +25,10 @@ def start_fetch(product_ids=None):
         _state["running"] = True
         _state["done"] = 0
         _state["total"] = 0
+        _state["stopped"] = False
+
+    _stop_event.clear()
+    base.clear_abort()
 
     if product_ids:
         models.reset_reviewed_for(product_ids)
@@ -34,7 +40,25 @@ def start_fetch(product_ids=None):
     return True
 
 
-def _fetch_one_product(product):
+def stop_fetch():
+    """Requests the running fetch to stop. Products already in flight still finish
+    (an HTTP request already underway can't be interrupted); anything not yet
+    started is skipped."""
+    with _lock:
+        if not _state["running"]:
+            return False
+        _state["stopped"] = True
+    _stop_event.set()
+    base.request_abort()
+    return True
+
+
+def _fetch_one_product(product, throttle=True):
+    if _stop_event.is_set():
+        return
+
+    base.set_throttle_enabled(throttle)
+
     techbuy_link = product["techbuy_link"]
     other_link = product["other_link"]
 
@@ -98,13 +122,14 @@ def _fetch_one_product(product):
 
 def _run_fetch(product_ids=None):
     products = models.get_products_by_ids(product_ids) if product_ids else models.get_all_products()
+    throttle = len(products) > 1  # a lone manual fetch isn't a burst — no need to pace it
 
     with _lock:
         _state["total"] = len(products)
 
     try:
         with ThreadPoolExecutor(max_workers=FETCH_MAX_WORKERS) as executor:
-            futures = [executor.submit(_fetch_one_product, p) for p in products]
+            futures = [executor.submit(_fetch_one_product, p, throttle) for p in products]
             for future in as_completed(futures):
                 future.result()  # surfaces unexpected exceptions in logs
                 with _lock:

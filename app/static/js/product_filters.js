@@ -6,6 +6,35 @@ document.addEventListener("DOMContentLoaded", function () {
     const FILTER_OPTIONS = JSON.parse(optionsDataEl.textContent || "{}");
     const ACTIVE_FILTERS = JSON.parse(activeDataEl.textContent || "{}");
 
+    // ---- persist filters across navigation (e.g. leaving the page and coming back) ----
+    const FILTERS_STORAGE_KEY = "productListFiltersV1";
+
+    function loadStoredFilters() {
+        try {
+            const raw = localStorage.getItem(FILTERS_STORAGE_KEY);
+            return raw ? JSON.parse(raw) : {};
+        } catch (e) {
+            return {};
+        }
+    }
+
+    function saveStoredFilters(filters) {
+        try {
+            localStorage.setItem(FILTERS_STORAGE_KEY, JSON.stringify(filters));
+        } catch (e) {}
+    }
+
+    const hasUrlFilters = new URL(window.location.href).searchParams.has("filters");
+    if (!hasUrlFilters) {
+        const stored = loadStoredFilters();
+        if (Object.keys(stored).length) {
+            navigateWithFilters(stored);
+            return; // navigating away — no need to keep initializing this page
+        }
+    } else {
+        saveStoredFilters(ACTIVE_FILTERS);
+    }
+
     const COLUMN_LABELS = {
         category: "Category",
         techbuy_stock: "Stock Status (Tech Buy)",
@@ -42,6 +71,7 @@ document.addEventListener("DOMContentLoaded", function () {
         Object.keys(filters).forEach(function (k) {
             if (filters[k] && filters[k].length) nonEmpty[k] = filters[k];
         });
+        saveStoredFilters(nonEmpty);
         if (Object.keys(nonEmpty).length) {
             url.searchParams.set("filters", JSON.stringify(nonEmpty));
         } else {

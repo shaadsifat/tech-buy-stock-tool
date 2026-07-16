@@ -23,6 +23,7 @@
     --shadow-sm: 0 1px 2px rgba(16, 24, 40, 0.06);
     --shadow-md: 0 6px 20px rgba(16, 24, 40, 0.09);
     --sidebar-width: 240px;
+    --sidebar-width-collapsed: 52px;
 }
 
 * { box-sizing: border-box; }
@@ -69,6 +70,37 @@ body {
     display: flex;
     flex-direction: column;
     z-index: 10;
+    transition: width 0.2s ease, padding 0.2s ease;
+}
+
+.sidebar-toggle {
+    position: absolute;
+    top: 22px;
+    right: -12px;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    border: 1px solid var(--border);
+    background: #fff;
+    color: var(--text);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: var(--shadow-sm);
+    z-index: 11;
+    padding: 0;
+    transition: transform 0.2s ease, background 0.15s ease;
+}
+
+.sidebar-toggle svg {
+    width: 14px;
+    height: 14px;
+    transition: transform 0.2s ease;
+}
+
+.sidebar-toggle:hover {
+    background: var(--bg);
 }
 
 .sidebar-brand {
@@ -95,6 +127,13 @@ body {
     width: auto;
     max-width: 100%;
     display: block;
+}
+
+.brand-favicon {
+    display: none;
+    height: 22px;
+    width: 22px;
+    object-fit: contain;
 }
 
 .brand-subtitle {
@@ -157,6 +196,7 @@ body {
     min-width: 0;
     padding: 2rem 2.5rem 3rem;
     animation: fadeInUp 0.35s ease;
+    transition: margin-left 0.2s ease;
 }
 
 .content-narrow {
@@ -637,6 +677,13 @@ tbody td[data-col]:not([data-col="actions"]):active {
 
 .copy-flash { animation: copyFlash 0.6s ease; }
 
+@keyframes rowUpdateFlash {
+    0% { background-color: rgba(34, 197, 94, 0.16); }
+    100% { background-color: transparent; }
+}
+
+.row-update-flash td { animation: rowUpdateFlash 1.2s ease; }
+
 .copy-toast {
     position: fixed;
     display: flex;
@@ -927,9 +974,58 @@ tbody tr.row-reviewed:hover {
     align-items: center;
 }
 
+/* ---------- collapsible sidebar ---------- */
+
+html.sidebar-collapsed .sidebar {
+    width: var(--sidebar-width-collapsed);
+    padding: 1.5rem 0.4rem;
+    align-items: center;
+}
+
+html.sidebar-collapsed .sidebar-brand {
+    align-items: center;
+}
+
+html.sidebar-collapsed .brand-subtitle,
+html.sidebar-collapsed .sidebar nav a span,
+html.sidebar-collapsed .sidebar-footer {
+    display: none;
+}
+
+html.sidebar-collapsed .brand-logo-wrap {
+    padding: 0.4rem;
+}
+
+html.sidebar-collapsed .brand-logo {
+    display: none;
+}
+
+html.sidebar-collapsed .brand-favicon {
+    display: block;
+}
+
+html.sidebar-collapsed .sidebar nav a {
+    justify-content: center;
+    padding: 0.6rem 0.3rem;
+}
+
+html.sidebar-collapsed .sidebar nav a svg {
+    width: 19px;
+    height: 19px;
+}
+
+html.sidebar-collapsed .main-area {
+    margin-left: var(--sidebar-width-collapsed);
+}
+
+html.sidebar-collapsed .sidebar-toggle svg {
+    transform: rotate(180deg);
+}
+
 /* ---------- responsive ---------- */
 
 @media (max-width: 860px) {
+    .sidebar-toggle { display: none; }
     .sidebar {
         width: 72px;
         padding: 1.25rem 0.5rem;

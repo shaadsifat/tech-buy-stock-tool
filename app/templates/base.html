@@ -6,38 +6,51 @@
     <title>{% block title %}Tech Buy Stock Tool{% endblock %}</title>
     <link rel="icon" type="image/webp" href="{{ url_for('static', filename='img/favicon.webp') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <script>
+        (function () {
+            try {
+                if (localStorage.getItem("sidebarCollapsed") === "1") {
+                    document.documentElement.classList.add("sidebar-collapsed");
+                }
+            } catch (e) {}
+        })();
+    </script>
 </head>
 <body>
     <div class="app-shell">
         <aside class="sidebar">
+            <button type="button" id="sidebar-toggle-btn" class="sidebar-toggle" aria-label="Collapse sidebar" title="Collapse sidebar">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"></path></svg>
+            </button>
             <div class="sidebar-brand">
                 <div class="brand-logo-wrap">
                     <img src="{{ url_for('static', filename='img/techbuy_logo.webp') }}" alt="Tech Buy" class="brand-logo">
+                    <img src="{{ url_for('static', filename='img/favicon.webp') }}" alt="Tech Buy" class="brand-favicon">
                 </div>
                 <span class="brand-subtitle">Stock Tool</span>
             </div>
             <nav>
-                <a href="{{ url_for('main.index') }}" class="{{ 'active' if request.endpoint == 'main.index' else '' }}">
+                <a href="{{ url_for('main.index') }}" title="Dashboard" class="{{ 'active' if request.endpoint == 'main.index' else '' }}">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1.5"></rect><rect x="14" y="3" width="7" height="5" rx="1.5"></rect><rect x="14" y="12" width="7" height="9" rx="1.5"></rect><rect x="3" y="16" width="7" height="5" rx="1.5"></rect></svg>
                     <span>Dashboard</span>
                 </a>
-                <a href="{{ url_for('products.new_product') }}" class="{{ 'active' if request.endpoint in ('products.new_product', 'products.create_product') else '' }}">
+                <a href="{{ url_for('products.new_product') }}" title="Input Product" class="{{ 'active' if request.endpoint in ('products.new_product', 'products.create_product') else '' }}">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 8v8M8 12h8"></path></svg>
                     <span>Input Product</span>
                 </a>
-                <a href="{{ url_for('products.list_products_view') }}" class="{{ 'active' if request.endpoint in ('products.list_products_view', 'products.edit_product', 'products.update_product') else '' }}">
+                <a href="{{ url_for('products.list_products_view') }}" title="Product List" class="{{ 'active' if request.endpoint in ('products.list_products_view', 'products.edit_product', 'products.update_product') else '' }}">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h16M4 18h10"></path></svg>
                     <span>Product List</span>
                 </a>
-                <a href="{{ url_for('categories.categories_view') }}" class="{{ 'active' if request.endpoint == 'categories.categories_view' else '' }}">
+                <a href="{{ url_for('categories.categories_view') }}" title="Categories" class="{{ 'active' if request.endpoint == 'categories.categories_view' else '' }}">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41 12 22l-9-9V4a1 1 0 0 1 1-1h9z"></path><circle cx="7.5" cy="7.5" r="1.5"></circle></svg>
                     <span>Categories</span>
                 </a>
-                <a href="{{ url_for('products.other_sites_view') }}" class="{{ 'active' if request.endpoint == 'products.other_sites_view' else '' }}">
+                <a href="{{ url_for('products.other_sites_view') }}" title="Other Websites" class="{{ 'active' if request.endpoint == 'products.other_sites_view' else '' }}">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M3 12h18M12 3c2.5 2.7 4 6 4 9s-1.5 6.3-4 9c-2.5-2.7-4-6-4-9s1.5-6.3 4-9z"></path></svg>
                     <span>Other Websites</span>
                 </a>
-                <a href="{{ url_for('main.guide') }}" class="{{ 'active' if request.endpoint == 'main.guide' else '' }}">
+                <a href="{{ url_for('main.guide') }}" title="Guide" class="{{ 'active' if request.endpoint == 'main.guide' else '' }}">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 6.5c-1.5-1-4-1.5-6-1v13c2 0 4.5.5 6 1.5m0-13.5c1.5-1 4-1.5 6-1v13c-2 0-4.5.5-6 1.5m0-13.5v13.5"></path></svg>
                     <span>Guide</span>
                 </a>
@@ -60,6 +73,7 @@
         </div>
     </div>
 
+    <script src="{{ url_for('static', filename='js/sidebar.js') }}"></script>
     {% block scripts %}{% endblock %}
 </body>
 </html>

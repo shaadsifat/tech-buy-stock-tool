@@ -1,14 +1,14 @@
 {% extends "base.html" %}
 {% block title %}Dashboard{% endblock %}
 
-{% macro bar_chart(title, data, colors) %}
+{% macro bar_chart(key, title, data, colors) %}
 {% set max_val = (data.values() | list | max) if data else 0 %}
-<div class="chart-card">
+<div class="chart-card" data-chart="{{ key }}">
     <h3>{{ title }}</h3>
     <div class="bar-chart">
         {% for label, value in data.items() %}
         {% set pct = ((value / max_val * 100) if max_val else 0) %}
-        <div class="bar-row" style="animation-delay: {{ loop.index0 * 0.05 }}s;">
+        <div class="bar-row" data-label="{{ label }}" style="animation-delay: {{ loop.index0 * 0.05 }}s;">
             <span class="bar-label">{{ label }}</span>
             <div class="bar-track">
                 <div class="bar-fill" style="--bar-width: {{ pct }}%; background: {{ colors[loop.index0] }}; animation-delay: {{ 0.1 + loop.index0 * 0.06 }}s;"></div>
@@ -27,33 +27,40 @@
 </div>
 
 <div class="stat-grid">
-    <div class="stat-card" style="animation-delay: 0.02s;">
+    <div class="stat-card" data-stat="total_products" style="animation-delay: 0.02s;">
         <div class="stat-label">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h16M4 18h10"></path></svg>
             Total Products
         </div>
         <div class="stat-value">{{ stats.total_products }}</div>
     </div>
-    <div class="stat-card" style="animation-delay: 0.06s;">
+    <div class="stat-card" data-stat="total_categories" style="animation-delay: 0.06s;">
         <div class="stat-label">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41 12 22l-9-9V4a1 1 0 0 1 1-1h9z"></path><circle cx="7.5" cy="7.5" r="1.5"></circle></svg>
             Categories
         </div>
         <div class="stat-value">{{ stats.total_categories }}</div>
     </div>
-    <div class="stat-card accent-danger" style="animation-delay: 0.1s;">
+    <div class="stat-card accent-danger" data-stat="need_action" style="animation-delay: 0.1s;">
         <div class="stat-label">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4M12 17h.01"></path><circle cx="12" cy="12" r="9"></circle></svg>
             Need Action
         </div>
         <div class="stat-value">{{ stats.need_action }}</div>
     </div>
-    <div class="stat-card accent-accent" style="animation-delay: 0.14s;">
+    <div class="stat-card accent-danger" data-stat="fetch_problems" style="animation-delay: 0.12s;">
+        <div class="stat-label">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z"></path><path d="M12 9v4M12 17h.01"></path></svg>
+            Fetch Problems
+        </div>
+        <div class="stat-value">{{ stats.fetch_problems }}</div>
+    </div>
+    <div class="stat-card accent-accent" data-stat="perfectly_fetched" style="animation-delay: 0.14s;">
         <div class="stat-label">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4v16h16M8 15l3-4 3 3 4-6"></path></svg>
-            Fetched Ready
+            Perfectly Fetched
         </div>
-        <div class="stat-value">{{ fetched_count }}</div>
+        <div class="stat-value">{{ stats.perfectly_fetched }}</div>
     </div>
 </div>
 
@@ -61,6 +68,7 @@
     <h2 style="margin-top: 0; font-size: 1.05rem;">Stock Fetch</h2>
     <div class="btn-row">
         <button id="start-fetch-btn" class="btn">Start Fetching</button>
+        <button id="stop-fetch-btn" class="btn btn-danger" style="display: none;">Stop Fetching</button>
         <a id="import-excel-btn" class="btn btn-secondary" href="{{ url_for('main.export_excel') }}"
            style="display: {{ 'inline-flex' if fetched_count > 0 else 'none' }};">
             Import in Excel File
@@ -89,12 +97,12 @@
 </div>
 
 <div class="chart-grid">
-    {{ bar_chart('Fetched Status', report.fetched_status, ['#059669', '#f7941d', '#f7941d', '#dc2626', '#9ca3af']) }}
-    {{ bar_chart('Stock Status (Tech Buy)', report.techbuy_stock, ['#059669', '#dc2626', '#9ca3af']) }}
-    {{ bar_chart('Stock Status (Other)', report.other_stock, ['#059669', '#dc2626', '#9ca3af']) }}
-    {{ bar_chart('Need Action', report.need_action, ['#dc2626', '#059669', '#9ca3af']) }}
-    {{ bar_chart('Updated', report.updated, ['#059669', '#dc2626', '#9ca3af']) }}
-    {{ bar_chart('Reviewed', report.reviewed, ['#1f6f91', '#9ca3af']) }}
+    {{ bar_chart('fetched_status', 'Fetched Status', report.fetched_status, ['#059669', '#f7941d', '#f7941d', '#dc2626', '#9ca3af']) }}
+    {{ bar_chart('techbuy_stock', 'Stock Status (Tech Buy)', report.techbuy_stock, ['#059669', '#dc2626', '#9ca3af']) }}
+    {{ bar_chart('other_stock', 'Stock Status (Other)', report.other_stock, ['#059669', '#dc2626', '#9ca3af']) }}
+    {{ bar_chart('need_action', 'Need Action', report.need_action, ['#dc2626', '#059669', '#9ca3af']) }}
+    {{ bar_chart('updated', 'Updated', report.updated, ['#059669', '#dc2626', '#9ca3af']) }}
+    {{ bar_chart('reviewed', 'Reviewed', report.reviewed, ['#1f6f91', '#9ca3af']) }}
 </div>
 {% endblock %}
 
