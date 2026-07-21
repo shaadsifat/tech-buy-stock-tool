@@ -29,12 +29,13 @@ def _build_summary_text(s):
 @main_bp.route("/", methods=["GET"])
 def index():
     fetched_count = models.count_fetch_results()
+    data = models.get_dashboard_data()
     return render_template(
         "main.html",
         fetched_count=fetched_count,
-        stats=models.get_dashboard_stats(),
-        report=models.get_dashboard_report(),
-        summary_text=_build_summary_text(models.get_summary_stats()),
+        stats=data["stats"],
+        report=data["report"],
+        summary_text=_build_summary_text(data["summary"]),
     )
 
 
@@ -61,12 +62,13 @@ def fetch_stop():
 
 @main_bp.route("/dashboard/stats", methods=["GET"])
 def dashboard_stats():
+    data = models.get_dashboard_data()
     return jsonify({
         "ok": True,
         "fetched_count": models.count_fetch_results(),
-        "stats": models.get_dashboard_stats(),
-        "report": models.get_dashboard_report(),
-        "summary_text": _build_summary_text(models.get_summary_stats()),
+        "stats": data["stats"],
+        "report": data["report"],
+        "summary_text": _build_summary_text(data["summary"]),
     })
 
 

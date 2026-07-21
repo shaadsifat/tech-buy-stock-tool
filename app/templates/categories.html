@@ -1,25 +1,46 @@
 {% extends "base.html" %}
 {% block title %}Categories{% endblock %}
+
+{% macro sort_link(label, key) -%}
+    {% set is_current = (sort == key) %}
+    <a href="{{ url_for('categories.categories_view', size=page_size, q=query, sort=key, dir=(other_dir if is_current else 'asc'), page=1) }}">
+        {{ label }}{% if is_current %} {{ '▲' if direction == 'asc' else '▼' }}{% endif %}
+    </a>
+{%- endmacro %}
+
 {% block content %}
 <h1>Product Categories</h1>
 
-<div class="card">
-    <form method="post" action="{{ url_for('categories.add_category') }}" class="btn-row" style="align-items: flex-end;">
-        <div class="form-group" style="margin-bottom: 0;">
-            <label for="name">New category name</label>
-            <input type="text" id="name" name="name" placeholder="e.g. Mouse" required>
-        </div>
-        <button type="submit" class="btn">Add Category</button>
-    </form>
+<div class="toolbar">
+    <div class="btn-row" style="align-items: center;">
+        <form method="get" action="{{ url_for('categories.categories_view') }}" class="btn-row" style="align-items: center;">
+            <input type="hidden" name="sort" value="{{ sort }}">
+            <input type="hidden" name="dir" value="{{ direction }}">
+            <input type="hidden" name="size" value="{{ page_size }}">
+            <input type="text" name="q" value="{{ query }}" placeholder="Search by category name..." data-dynamic-search data-table-target="categories-table">
+            {% if query %}
+            <a href="{{ url_for('categories.categories_view', size=page_size, sort=sort, dir=direction) }}" class="btn btn-secondary">Clear</a>
+            {% endif %}
+        </form>
+    </div>
+
+    <div class="btn-row" style="align-items: center;">
+        <span class="muted">Show</span>
+        <select id="page-size-select" class="category-select" aria-label="Categories per page">
+            {% for choice in page_size_choices %}
+            <option value="{{ choice }}" {{ 'selected' if choice == page_size else '' }}>{{ choice }}</option>
+            {% endfor %}
+        </select>
+    </div>
 </div>
 
 <div class="card">
     <div class="table-scroll">
-    <table>
+    <table id="categories-table">
         <thead>
             <tr>
-                <th>Category</th>
-                <th>Products in category</th>
+                <th>{{ sort_link('Category', 'name') }}</th>
+                <th>{{ sort_link('Products in category', 'count') }}</th>
                 <th></th>
             </tr>
         </thead>
@@ -39,10 +60,62 @@
                 </td>
             </tr>
             {% else %}
-            <tr><td colspan="3" class="muted">No categories yet.</td></tr>
+            <tr><td colspan="3" class="muted">No categories found.</td></tr>
             {% endfor %}
         </tbody>
     </table>
     </div>
+
+    <div class="pagination">
+        {% if page > 1 %}
+        <a href="{{ url_for('categories.categories_view', size=page_size, q=query, sort=sort, dir=direction, page=page-1) }}">&laquo; Prev</a>
+        {% endif %}
+
+        {% for p_num in pagination_window(page, total_pages) %}
+            {% if p_num is none %}
+                <span class="pagination-ellipsis">…</span>
+            {% elif p_num == page %}
+                <span class="current">{{ p_num }}</span>
+            {% else %}
+                <a href="{{ url_for('categories.categories_view', size=page_size, q=query, sort=sort, dir=direction, page=p_num) }}">{{ p_num }}</a>
+            {% endif %}
+        {% endfor %}
+
+        {% if page < total_pages %}
+        <a href="{{ url_for('categories.categories_view', size=page_size, q=query, sort=sort, dir=direction, page=page+1) }}">Next &raquo;</a>
+        {% endif %}
+
+        <span class="muted" style="margin-left: 0.75rem;">{{ total }} categor{{ 'y' if total == 1 else 'ies' }} total</span>
+    </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/dynamic_search.js') }}"></script>
+<script>
+(function () {
+    const STORAGE_KEY = "categoriesPageSizeV1";
+    const url = new URL(window.location.href);
+
+    if (!url.searchParams.has("size")) {
+        let stored = null;
+        try { stored = localStorage.getItem(STORAGE_KEY); } catch (e) {}
+        if (stored) {
+            url.searchParams.set("size", stored);
+            window.location.href = url.toString();
+            return;
+        }
+    } else {
+        try { localStorage.setItem(STORAGE_KEY, url.searchParams.get("size")); } catch (e) {}
+    }
+
+    document.getElementById("page-size-select").addEventListener("change", function () {
+        try { localStorage.setItem(STORAGE_KEY, this.value); } catch (e) {}
+        const u = new URL(window.location.href);
+        u.searchParams.set("size", this.value);
+        u.searchParams.set("page", "1");
+        window.location.href = u.toString();
+    });
+})();
+</script>
 {% endblock %}

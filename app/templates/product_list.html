@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Product List{% endblock %}
+{% block title %}Single Product List{% endblock %}
 
 {% macro sort_link(label, key) -%}
     {% set is_current = (sort == key) %}
@@ -20,8 +20,8 @@
 
 {% block content %}
 <div class="page-header">
-    <h1>Product List</h1>
-    <p>{{ total }} product(s) — search, sort, filter, and customize which columns are shown.</p>
+    <h1>Single Product List</h1>
+    <p>{{ total }} product(s) with no variants (or just one) — search, sort, filter, and customize which columns are shown.</p>
 </div>
 
 <div class="toolbar">
@@ -31,14 +31,14 @@
             <input type="hidden" name="dir" value="{{ direction }}">
             <input type="hidden" name="size" value="{{ page_size }}">
             <input type="hidden" name="filters" value="{{ filters_json }}">
-            <input type="text" name="q" value="{{ query }}" placeholder="Search by name...">
+            <input type="text" name="q" value="{{ query }}" placeholder="Search by name..." data-dynamic-search data-table-target="product-table">
             <button type="submit" class="btn">Search</button>
             {% if query %}
             <a href="{{ url_for('products.list_products_view', size=page_size, filters=filters_json) }}" class="btn btn-secondary">Clear</a>
             {% endif %}
         </form>
 
-        <select id="category-select" class="category-select" aria-label="Filter by category">
+        <select id="category-select" class="category-select" data-searchable data-placeholder="All Categories" aria-label="Filter by category">
             <option value="">All Categories</option>
             {% for c in categories %}
             <option value="{{ c.name }}">{{ c.name }}</option>
@@ -93,9 +93,9 @@
             <tr>
                 <th data-col="select" class="select-cell"><input type="checkbox" id="select-all-checkbox" aria-label="Select all"></th>
                 <th data-col="name">{{ sort_link('Product Name', 'name') }}</th>
-                <th data-col="category"><span class="th-content">{{ sort_link('Category', 'category') }}{{ filter_btn('category') }}</span></th>
+                <th data-col="category">{{ sort_link('Category', 'category') }}</th>
                 <th data-col="techbuy_link">Tech Buy Link</th>
-                <th data-col="other_link">Other Link</th>
+                <th data-col="other_link"><span class="th-content">Other Link{{ filter_btn('other_link') }}</span></th>
                 <th data-col="techbuy_stock"><span class="th-content">Stock Status (Tech Buy){{ filter_btn('techbuy_stock') }}</span></th>
                 <th data-col="other_stock"><span class="th-content">Stock Status (Other){{ filter_btn('other_stock') }}</span></th>
                 <th data-col="other_site"><span class="th-content">Other Site{{ filter_btn('other_site') }}</span></th>
@@ -107,6 +107,8 @@
                 <th data-col="sale_diff">Sale Price Diff</th>
                 <th data-col="need_action"><span class="th-content">{{ sort_link('Need Action', 'need_action') }}{{ filter_btn('need_action') }}</span></th>
                 <th data-col="fetched_status"><span class="th-content">{{ sort_link('Fetched Status', 'fetched_status') }}{{ filter_btn('fetched_status') }}</span></th>
+                <th data-col="shopify_status"><span class="th-content">Shopify Status{{ filter_btn('shopify_status') }}</span></th>
+                <th data-col="variant_issue">Variant Issue</th>
                 <th data-col="reviewed"><span class="th-content">Reviewed{{ filter_btn('reviewed') }}</span></th>
                 <th data-col="actions"></th>
             </tr>
@@ -118,7 +120,7 @@
                 <td data-col="name" title="{{ p.name }}" data-full-text="{{ p.name }}">{{ p.name | truncate(25, True, '...', 0) }}</td>
                 <td data-col="category">{{ p.category }}</td>
                 <td data-col="techbuy_link"><a href="{{ p.techbuy_link }}" target="_blank" rel="noopener">Link</a></td>
-                <td data-col="other_link"><a href="{{ p.other_link }}" target="_blank" rel="noopener">Link</a></td>
+                <td data-col="other_link">{% if p.other_link %}<a href="{{ p.other_link }}" target="_blank" rel="noopener">Link</a>{% else %}<span class="muted">—</span>{% endif %}</td>
                 <td data-col="techbuy_stock">{{ p.techbuy_stock or '—' }}</td>
                 <td data-col="other_stock">{{ p.other_stock or '—' }}</td>
                 <td data-col="other_site">{{ p.other_site or '—' }}</td>
@@ -160,6 +162,24 @@
                         <span class="muted">—</span>
                     {% endif %}
                 </td>
+                <td data-col="shopify_status">
+                    {% if p.shopify_removed %}
+                        <span class="badge badge-yes" title="No longer found in the last Shopify sync">Removed</span>
+                    {% elif p.shopify_status == 'DRAFT' %}
+                        <span class="badge badge-neutral">Draft</span>
+                    {% elif p.shopify_status == 'ACTIVE' %}
+                        <span class="badge badge-no">Active</span>
+                    {% else %}
+                        <span class="muted">—</span>
+                    {% endif %}
+                </td>
+                <td data-col="variant_issue">
+                    {% if p.variant_issue %}
+                        <span class="badge badge-yes" title="{{ p.variant_issue }}">Incomplete</span>
+                    {% else %}
+                        <span class="muted">—</span>
+                    {% endif %}
+                </td>
                 <td data-col="reviewed" class="reviewed-cell">
                     {% if p.need_action == 'No' %}
                         <input type="checkbox" class="reviewed-checkbox" data-product-id="{{ p.id }}" checked disabled title="Locked — price and stock status both already match">
@@ -183,7 +203,7 @@
                 </td>
             </tr>
             {% else %}
-            <tr data-empty-row><td colspan="18" class="muted">No products found.</td></tr>
+            <tr data-empty-row><td colspan="20" class="muted">No products found.</td></tr>
             {% endfor %}
         </tbody>
     </table>
@@ -194,8 +214,10 @@
         <a href="{{ url_for('products.list_products_view', q=query, sort=sort, dir=direction, size=page_size, page=page-1, filters=filters_json) }}">&laquo; Prev</a>
         {% endif %}
 
-        {% for p_num in range(1, total_pages + 1) %}
-            {% if p_num == page %}
+        {% for p_num in pagination_window(page, total_pages) %}
+            {% if p_num is none %}
+                <span class="pagination-ellipsis">…</span>
+            {% elif p_num == page %}
                 <span class="current">{{ p_num }}</span>
             {% else %}
                 <a href="{{ url_for('products.list_products_view', q=query, sort=sort, dir=direction, size=page_size, page=p_num, filters=filters_json) }}">{{ p_num }}</a>
@@ -230,6 +252,13 @@
 
 <div id="filter-popover" class="filter-popover" style="display: none;">
     <div class="filter-popover-header"><strong id="filter-popover-title"></strong></div>
+    <div class="filter-popover-controls">
+        <input type="text" id="filter-search-input" class="filter-search-input" placeholder="Search...">
+        <div class="filter-popover-quick-actions">
+            <button type="button" id="filter-select-all-btn" class="link-btn">Select All</button>
+            <button type="button" id="filter-deselect-all-btn" class="link-btn">Deselect All</button>
+        </div>
+    </div>
     <div id="filter-popover-body" class="filter-popover-body"></div>
     <div class="filter-popover-footer">
         <button type="button" id="filter-clear-btn" class="btn btn-secondary">Clear</button>
@@ -242,6 +271,8 @@
 {% endblock %}
 
 {% block scripts %}
+<script src="{{ url_for('static', filename='js/searchable_select.js') }}"></script>
+<script src="{{ url_for('static', filename='js/dynamic_search.js') }}"></script>
 <script src="{{ url_for('static', filename='js/product_list.js') }}"></script>
 <script src="{{ url_for('static', filename='js/product_filters.js') }}"></script>
 <script src="{{ url_for('static', filename='js/product_bulk.js') }}"></script>

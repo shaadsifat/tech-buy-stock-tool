@@ -1,0 +1,321 @@
+{% extends "base.html" %}
+{% block title %}Variant Products{% endblock %}
+
+{% macro sort_link(label, key) -%}
+    {% set is_current = (sort == key) %}
+    <a href="{{ url_for('products.variant_products_view', q=query, category=category, sort=key, dir=(other_dir if is_current else 'asc'), page=1, size=page_size, filters=filters_json) }}">
+        {{ label }}{% if is_current %} {{ '▲' if direction == 'asc' else '▼' }}{% endif %}
+    </a>
+{%- endmacro %}
+
+{% macro price_cell(value) -%}
+    {% if value is not none %}{{ '%.2f'|format(value) }}{% else %}<span class="muted">—</span>{% endif %}
+{%- endmacro %}
+
+{% macro filter_btn(col) -%}
+    <button type="button" class="filter-btn {{ 'active' if col in filters else '' }}" data-filter-col="{{ col }}" aria-label="Filter">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16l-6 8v6l-4 2v-8z"></path></svg>
+    </button>
+{%- endmacro %}
+
+{% macro need_action_badge(value) -%}
+    {% if value == 'Yes' %}
+        <span class="badge badge-yes">Yes</span>
+    {% elif value == 'No' %}
+        <span class="badge badge-no">No</span>
+    {% else %}
+        <span class="muted">—</span>
+    {% endif %}
+{%- endmacro %}
+
+{% macro variant_match_badge(status) -%}
+    {% if status == 'found' %}
+        <span class="badge badge-no">Found</span>
+    {% elif status == 'not_found' %}
+        <span class="badge badge-yes">Not Found</span>
+    {% elif status == 'found_tb' %}
+        <span class="badge badge-no">Found TB</span>
+    {% elif status == 'found_ot' %}
+        <span class="badge badge-yes">Found OT</span>
+    {% else %}
+        <span class="muted">—</span>
+    {% endif %}
+{%- endmacro %}
+
+{% macro shopify_status_badge(p) -%}
+    {% if p.shopify_removed %}
+        <span class="badge badge-yes" title="No longer found in the last Shopify sync">Removed</span>
+    {% elif p.shopify_status == 'DRAFT' %}
+        <span class="badge badge-neutral">Draft</span>
+    {% elif p.shopify_status == 'ACTIVE' %}
+        <span class="badge badge-no">Active</span>
+    {% else %}
+        <span class="muted">—</span>
+    {% endif %}
+{%- endmacro %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Variant Products</h1>
+    <p>{{ total }} product(s) with 2+ real Shopify variants. Click a row to expand its variant breakdown — Other-site link and comparison happen per variant inside.</p>
+</div>
+
+<div class="toolbar">
+    <div class="btn-row" style="align-items: center;">
+        {% for tab_key in ['', 'exact_match', 'variant_not_found', 'missing_from_techbuy'] %}
+        <a href="{{ url_for('products.variant_products_view', size=page_size, match_tab=tab_key) }}"
+           class="btn {{ 'btn-secondary' if match_tab != tab_key else '' }}">
+            {% if tab_key == '' %}All ({{ total_all }}){% else %}{{ match_tab_labels[tab_key] }} ({{ match_tab_counts[tab_key] }}){% endif %}
+        </a>
+        {% endfor %}
+    </div>
+</div>
+
+<div class="toolbar">
+    <div class="btn-row" style="align-items: center;">
+        <form method="get" action="{{ url_for('products.variant_products_view') }}" class="btn-row" style="align-items: center;">
+            <input type="hidden" name="sort" value="{{ sort }}">
+            <input type="hidden" name="dir" value="{{ direction }}">
+            <input type="hidden" name="size" value="{{ page_size }}">
+            <input type="hidden" name="filters" value="{{ filters_json }}">
+            <input type="hidden" name="category" value="{{ category }}">
+            <input type="text" name="q" value="{{ query }}" placeholder="Search by name..." data-dynamic-search data-table-target="variant-product-table">
+            <button type="submit" class="btn">Search</button>
+            {% if query %}
+            <a href="{{ url_for('products.variant_products_view', size=page_size, filters=filters_json, category=category) }}" class="btn btn-secondary">Clear</a>
+            {% endif %}
+        </form>
+
+        <select id="category-select" class="category-select" data-searchable data-placeholder="All Categories" aria-label="Filter by category">
+            <option value="">All Categories</option>
+            {% for c in categories %}
+            <option value="{{ c.name }}" {{ 'selected' if c.name == category else '' }}>{{ c.name }}</option>
+            {% endfor %}
+        </select>
+    </div>
+
+    <div class="btn-row" style="align-items: center;">
+        {% if filters %}
+        <button type="button" id="reset-filters-btn" class="btn btn-secondary">Reset All Filters</button>
+        {% endif %}
+        <button type="button" id="customize-columns-btn" class="btn btn-secondary">Customize Variant Columns</button>
+
+        <span class="muted">Show</span>
+        <select id="page-size-select" class="category-select" aria-label="Rows per page">
+            {% for choice in page_size_choices %}
+            <option value="{{ choice }}" {{ 'selected' if choice == page_size else '' }}>{{ choice }}</option>
+            {% endfor %}
+        </select>
+    </div>
+</div>
+
+<div id="fetch-running-bar" class="bulk-bar" style="display: none;">
+    <span id="fetch-running-text" class="bulk-bar-count">Fetching…</span>
+    <button type="button" id="product-list-stop-fetch-btn" class="btn btn-danger">Stop Fetching</button>
+</div>
+
+<div id="bulk-action-bar" class="bulk-bar" style="display: none;">
+    <span id="bulk-selected-count" class="bulk-bar-count">0 selected</span>
+    <div class="bulk-bar-actions">
+        <button type="button" id="bulk-mark-reviewed-btn" class="btn btn-secondary">Mark All Variants Reviewed</button>
+        <button type="button" id="bulk-refetch-btn" class="btn btn-secondary">Re-Fetch Selected</button>
+        <button type="button" id="bulk-export-btn" class="btn btn-secondary">Export Selected</button>
+        <button type="button" id="bulk-delete-btn" class="btn btn-danger">Delete Permanently</button>
+    </div>
+    <button type="button" id="bulk-clear-btn" class="icon-btn" title="Clear selection" aria-label="Clear selection">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"></path></svg>
+    </button>
+</div>
+
+<div class="card">
+    <div class="table-scroll">
+    <table id="variant-product-table" class="variant-parent-table">
+        <thead>
+            <tr>
+                <th data-col="select" class="select-cell"><input type="checkbox" id="select-all-checkbox" aria-label="Select all"></th>
+                <th class="expand-cell"></th>
+                <th data-col="name">{{ sort_link('Name', 'name') }}</th>
+                <th data-col="techbuy_link">Tech Buy Link</th>
+                <th data-col="other_link"><span class="th-content">Other Link{{ filter_btn('other_link') }}</span></th>
+                <th data-col="shopify_status"><span class="th-content">Shopify Status{{ filter_btn('shopify_status') }}</span></th>
+                <th data-col="fetched_status"><span class="th-content">Fetched Status{{ filter_btn('fetched_status') }}</span></th>
+                <th data-col="need_action"><span class="th-content">Need Action{{ filter_btn('need_action') }}</span></th>
+                <th data-col="reviewed"><span class="th-content">Reviewed{{ filter_btn('reviewed') }}</span></th>
+                <th data-col="actions"></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for p in products %}
+            {% set variants = variants_by_product.get(p.id, []) %}
+            <tr data-parent-row data-product-id="{{ p.id }}" class="variant-parent-row {{ 'row-reviewed' if p.reviewed else '' }}">
+                <td data-col="select" class="select-cell"><input type="checkbox" class="row-select-checkbox" data-product-id="{{ p.id }}" aria-label="Select {{ p.name }}"></td>
+                <td class="expand-cell">
+                    <button type="button" class="expand-toggle-btn" data-expand-target="variant-group-{{ p.id }}" aria-expanded="false" aria-label="Expand variants">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"></path></svg>
+                    </button>
+                </td>
+                <td data-col="name" title="{{ p.name }}" data-full-text="{{ p.name }}">
+                    {{ p.name | truncate(25, True, '...', 0) }} <span class="muted">({{ variants|length }} variants)</span>
+                </td>
+                <td data-col="techbuy_link"><a href="{{ p.techbuy_link }}" target="_blank" rel="noopener">Link</a></td>
+                <td data-col="other_link">{% if p.other_link %}<a href="{{ p.other_link }}" target="_blank" rel="noopener">Link</a>{% else %}<span class="muted">—</span>{% endif %}</td>
+                <td data-col="shopify_status">{{ shopify_status_badge(p) }}</td>
+                <td data-col="fetched_status">
+                    {% if p.fetched_status %}<span class="badge badge-neutral">{{ p.fetched_status }}</span>{% else %}<span class="muted">—</span>{% endif %}
+                </td>
+                <td data-col="need_action">{{ need_action_badge(p.need_action) }}</td>
+                <td data-col="reviewed">
+                    <span class="badge {{ 'badge-no' if p.reviewed else 'badge-yes' }}">{{ 'Yes' if p.reviewed else 'No' }}</span>
+                </td>
+                <td data-col="actions">
+                    <div class="icon-btn-row">
+                        <a href="{{ url_for('products.edit_product', product_id=p.id) }}" class="icon-btn" title="Edit" aria-label="Edit {{ p.name }}">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z"></path></svg>
+                        </a>
+                        <form method="post" class="inline"
+                              action="{{ url_for('products.delete_product', product_id=p.id) }}"
+                              onsubmit="return confirm('Delete {{ p.name }} — this removes the whole product, all variants included. Continue?');">
+                            <button type="submit" class="icon-btn icon-btn-danger" title="Delete whole product" aria-label="Delete {{ p.name }}">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"></path><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path><path d="M10 11v6M14 11v6"></path></svg>
+                            </button>
+                        </form>
+                    </div>
+                </td>
+            </tr>
+            <tr data-variant-group-row id="variant-group-{{ p.id }}" class="variant-group-row" hidden>
+                <td colspan="10">
+                    <table class="variant-sub-table">
+                        <thead>
+                            <tr>
+                                <th data-col="variant_path">Variant</th>
+                                <th data-col="techbuy_stock">Stock (Tech Buy)</th>
+                                <th data-col="other_stock">Stock (Other)</th>
+                                <th data-col="techbuy_regular">Regular Price</th>
+                                <th data-col="techbuy_sale">Sale Price</th>
+                                <th data-col="other_regular">Regular Price (Other)</th>
+                                <th data-col="other_sale">Sale Price (Other)</th>
+                                <th data-col="regular_diff">Regular Diff</th>
+                                <th data-col="sale_diff">Sale Diff</th>
+                                <th data-col="need_action">Need Action</th>
+                                <th data-col="fetched_status">Fetched Status</th>
+                                <th data-col="match_status">Match</th>
+                                <th data-col="shopify_status">Shopify Status</th>
+                                <th data-col="reviewed">Reviewed</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for v in variants %}
+                            <tr data-variant-row data-variant-id="{{ v.id }}" class="{{ 'row-reviewed' if v.reviewed else '' }} {{ 'variant-found-ot-row' if v.match_status == 'found_ot' else '' }}">
+                                <td data-col="variant_path">{{ v.variant_path }}</td>
+                                <td data-col="techbuy_stock">{{ v.techbuy_stock or '—' }}</td>
+                                <td data-col="other_stock">{{ v.other_stock or '—' }}</td>
+                                <td data-col="techbuy_regular">{{ price_cell(v.techbuy_regular) }}</td>
+                                <td data-col="techbuy_sale">{{ price_cell(v.techbuy_sale) }}</td>
+                                <td data-col="other_regular">{{ price_cell(v.other_regular) }}</td>
+                                <td data-col="other_sale">{{ price_cell(v.other_sale) }}</td>
+                                <td data-col="regular_diff">
+                                    {% if v.techbuy_regular is not none and v.other_regular is not none %}
+                                        <span class="badge badge-neutral">{{ '%+.2f'|format(v.techbuy_regular - v.other_regular) }}</span>
+                                    {% else %}<span class="muted">—</span>{% endif %}
+                                </td>
+                                <td data-col="sale_diff">
+                                    {% if v.techbuy_sale is not none and v.other_sale is not none %}
+                                        <span class="badge badge-neutral">{{ '%+.2f'|format(v.techbuy_sale - v.other_sale) }}</span>
+                                    {% else %}<span class="muted">—</span>{% endif %}
+                                </td>
+                                <td data-col="need_action">{{ need_action_badge(v.need_action) }}</td>
+                                <td data-col="fetched_status">
+                                    {% if v.fetched_status %}<span class="badge badge-neutral">{{ v.fetched_status }}</span>{% else %}<span class="muted">—</span>{% endif %}
+                                </td>
+                                <td data-col="match_status">{{ variant_match_badge(v.match_status) }}</td>
+                                <td data-col="shopify_status">{{ shopify_status_badge(p) }}</td>
+                                <td data-col="reviewed" class="reviewed-cell">
+                                    {% if v.need_action == 'No' %}
+                                        <input type="checkbox" class="variant-reviewed-checkbox" data-variant-id="{{ v.id }}" checked disabled title="Locked — nothing to review">
+                                    {% else %}
+                                        <input type="checkbox" class="variant-reviewed-checkbox" data-variant-id="{{ v.id }}" {{ 'checked' if v.reviewed else '' }} aria-label="Mark variant reviewed">
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </td>
+            </tr>
+            {% else %}
+            <tr data-empty-row><td colspan="10" class="muted">No variant products found.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    </div>
+
+    <div class="pagination">
+        {% if page > 1 %}
+        <a href="{{ url_for('products.variant_products_view', q=query, category=category, sort=sort, dir=direction, size=page_size, page=page-1, filters=filters_json) }}">&laquo; Prev</a>
+        {% endif %}
+
+        {% for p_num in pagination_window(page, total_pages) %}
+            {% if p_num is none %}
+                <span class="pagination-ellipsis">…</span>
+            {% elif p_num == page %}
+                <span class="current">{{ p_num }}</span>
+            {% else %}
+                <a href="{{ url_for('products.variant_products_view', q=query, category=category, sort=sort, dir=direction, size=page_size, page=p_num, filters=filters_json) }}">{{ p_num }}</a>
+            {% endif %}
+        {% endfor %}
+
+        {% if page < total_pages %}
+        <a href="{{ url_for('products.variant_products_view', q=query, category=category, sort=sort, dir=direction, size=page_size, page=page+1, filters=filters_json) }}">Next &raquo;</a>
+        {% endif %}
+
+        <span class="muted" style="margin-left: 0.75rem;">{{ total }} product(s) total</span>
+    </div>
+</div>
+
+<div id="columns-modal-backdrop" class="modal-backdrop" style="display: none;">
+    <div class="modal">
+        <div class="modal-header">
+            <h2>Customize Variant Columns</h2>
+            <button type="button" id="columns-modal-close" class="modal-close" aria-label="Close">&times;</button>
+        </div>
+        <p class="muted">Check the columns to show, and drag to reorder them — applies to the inner variant table only.</p>
+        <ul id="columns-list" class="columns-list"></ul>
+        <div class="modal-footer">
+            <button type="button" id="columns-reset-btn" class="btn btn-secondary">Reset to Default</button>
+            <div class="btn-row">
+                <button type="button" id="columns-cancel-btn" class="btn btn-secondary">Cancel</button>
+                <button type="button" id="columns-save-btn" class="btn">Apply</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="filter-popover" class="filter-popover" style="display: none;">
+    <div class="filter-popover-header"><strong id="filter-popover-title"></strong></div>
+    <div class="filter-popover-controls">
+        <input type="text" id="filter-search-input" class="filter-search-input" placeholder="Search...">
+        <div class="filter-popover-quick-actions">
+            <button type="button" id="filter-select-all-btn" class="link-btn">Select All</button>
+            <button type="button" id="filter-deselect-all-btn" class="link-btn">Deselect All</button>
+        </div>
+    </div>
+    <div id="filter-popover-body" class="filter-popover-body"></div>
+    <div class="filter-popover-footer">
+        <button type="button" id="filter-clear-btn" class="btn btn-secondary">Clear</button>
+        <button type="button" id="filter-apply-btn" class="btn">Apply</button>
+    </div>
+</div>
+
+<script type="application/json" id="filter-options-data">{{ filter_options | tojson }}</script>
+<script type="application/json" id="filter-active-data">{{ filters | tojson }}</script>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/searchable_select.js') }}"></script>
+<script src="{{ url_for('static', filename='js/dynamic_search.js') }}"></script>
+<script src="{{ url_for('static', filename='js/variant_filters.js') }}"></script>
+<script src="{{ url_for('static', filename='js/variant_columns.js') }}"></script>
+<script src="{{ url_for('static', filename='js/variant_bulk.js') }}"></script>
+<script src="{{ url_for('static', filename='js/variant_live_update.js') }}"></script>
+<script src="{{ url_for('static', filename='js/variant_products.js') }}"></script>
+{% endblock %}

@@ -630,6 +630,70 @@ tbody td[data-col]:not([data-col="actions"]):active {
     box-shadow: 0 0 0 3px rgba(247, 148, 29, 0.15);
 }
 
+/* ---------- searchable select ---------- */
+
+.searchable-select {
+    position: relative;
+    display: inline-block;
+}
+
+.searchable-select-native {
+    display: none !important;
+}
+
+.searchable-select-input {
+    padding: 0.55rem 0.75rem;
+    border: 1px solid #d1d5db;
+    border-radius: var(--radius-sm);
+    min-width: 180px;
+    background: #fff;
+    font-size: 0.9rem;
+    color: var(--text);
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.searchable-select-input:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(247, 148, 29, 0.15);
+}
+
+.searchable-select-dropdown {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    min-width: 100%;
+    max-height: 260px;
+    overflow-y: auto;
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    box-shadow: var(--shadow-md);
+    z-index: 200;
+}
+
+.searchable-select-item {
+    padding: 0.45rem 0.75rem;
+    font-size: 0.88rem;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.searchable-select-item:hover {
+    background: #f1f5f9;
+}
+
+.searchable-select-item.active {
+    background: rgba(247, 148, 29, 0.12);
+    font-weight: 600;
+}
+
+.searchable-select-empty {
+    padding: 0.45rem 0.75rem;
+    font-size: 0.85rem;
+    color: var(--muted);
+}
+
 /* ---------- pagination ---------- */
 
 .pagination {
@@ -652,6 +716,7 @@ tbody td[data-col]:not([data-col="actions"]):active {
 
 .pagination a:hover { background: #f1f5f9; border-color: #cbd5e1; }
 .pagination .current { background: var(--accent); color: #fff; border-color: var(--accent); font-weight: 600; }
+.pagination .pagination-ellipsis { border: none; padding: 0.35rem 0.2rem; color: var(--muted); }
 
 /* ---------- badges ---------- */
 
@@ -862,6 +927,7 @@ tbody td[data-col]:not([data-col="actions"]):active {
     box-shadow: var(--shadow-md);
     width: 240px;
     max-height: 320px;
+    overflow: hidden;
     display: flex;
     flex-direction: column;
     z-index: 150;
@@ -874,12 +940,54 @@ tbody td[data-col]:not([data-col="actions"]):active {
     border-bottom: 1px solid var(--border);
 }
 
+.filter-popover-controls {
+    padding: 0.6rem 0.85rem 0.4rem;
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+}
+
+.filter-search-input {
+    width: 100%;
+    padding: 0.4rem 0.6rem;
+    border: 1px solid #d1d5db;
+    border-radius: var(--radius-sm);
+    font-size: 0.85rem;
+    box-sizing: border-box;
+}
+
+.filter-search-input:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(247, 148, 29, 0.15);
+}
+
+.filter-popover-quick-actions {
+    display: flex;
+    gap: 0.75rem;
+    margin-top: 0.4rem;
+}
+
+.link-btn {
+    background: none;
+    border: none;
+    padding: 0;
+    color: var(--brand-blue);
+    font-size: 0.78rem;
+    font-weight: 600;
+    cursor: pointer;
+    text-decoration: none;
+}
+
+.link-btn:hover { text-decoration: underline; }
+
 .filter-popover-body {
     padding: 0.5rem 0.85rem;
     overflow-y: auto;
     display: flex;
     flex-direction: column;
     gap: 0.35rem;
+    flex: 1;
+    min-height: 0;
 }
 
 .filter-option {
@@ -888,6 +996,10 @@ tbody td[data-col]:not([data-col="actions"]):active {
     gap: 0.5rem;
     font-size: 0.85rem;
     cursor: pointer;
+}
+
+.filter-option.filter-option-hidden {
+    display: none;
 }
 
 .filter-popover-footer {
@@ -918,7 +1030,8 @@ tbody tr.row-reviewed:hover {
     cursor: default !important;
 }
 
-.reviewed-checkbox {
+.reviewed-checkbox,
+.variant-reviewed-checkbox {
     width: 16px;
     height: 16px;
     cursor: pointer;
@@ -1020,6 +1133,81 @@ html.sidebar-collapsed .main-area {
 
 html.sidebar-collapsed .sidebar-toggle svg {
     transform: rotate(180deg);
+}
+
+/* ---------- variant products page ---------- */
+
+.expand-cell {
+    width: 36px;
+    text-align: center;
+}
+
+.expand-toggle-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    border: none;
+    background: transparent;
+    color: var(--muted);
+    cursor: pointer;
+    border-radius: 6px;
+    transition: transform 0.15s ease, background 0.15s ease, color 0.15s ease;
+}
+
+.expand-toggle-btn:hover {
+    background: #eef4fa;
+    color: var(--text);
+}
+
+.expand-toggle-btn svg {
+    width: 14px;
+    height: 14px;
+    transition: transform 0.15s ease;
+}
+
+.expand-toggle-btn.expanded svg {
+    transform: rotate(90deg);
+}
+
+.variant-group-row td {
+    padding: 0;
+    background: #f8f9fb;
+}
+
+.variant-group-row[hidden] {
+    display: none;
+}
+
+.variant-sub-table {
+    width: 100%;
+    background: #f8f9fb;
+}
+
+.variant-sub-table th {
+    position: static;
+    background: #eef1f5;
+    font-size: 0.68rem;
+}
+
+.variant-sub-table th, .variant-sub-table td {
+    padding: 0.55rem 0.85rem;
+}
+
+.variant-sub-table tbody tr:nth-child(even) {
+    background: #f2f4f7;
+}
+
+.variant-sub-table tbody tr:hover {
+    background: #e6eef5;
+}
+
+/* A "Found OT" variant (exists on the Other site, not on Tech Buy) is a real,
+   fully-interactive row — just a lighter accent, not the heavier read-only treatment
+   an informational-only row would get. */
+.variant-found-ot-row {
+    box-shadow: inset 3px 0 0 #f79457;
 }
 
 /* ---------- responsive ---------- */

@@ -15,16 +15,14 @@ DEFAULT_HEADERS = {
 
 REQUEST_TIMEOUT = 15
 
-# techbuybd.com (Shopify) rate-limits/bot-flags bursts of concurrent automated
-# requests (returns 429 "non-converting bot" errors and can serve stale cached
-# pages to traffic it flags as a bot). Every domain gets the same polite baseline
-# gap between requests so no site sees a burst.
-DEFAULT_MIN_INTERVAL = 5.0
-DOMAIN_MIN_INTERVAL = {
-    "techbuybd.com": 5.0,
-}
-# Randomized +/- so requests don't land on a perfectly regular, bot-like cadence.
-JITTER_RATIO = 0.25
+# Every "Other website" domain gets a polite baseline gap between requests so no
+# site sees a burst of concurrent automated requests during a fetch run.
+DEFAULT_MIN_INTERVAL = 1.0
+DOMAIN_MIN_INTERVAL = {}
+# Randomized +/- so requests don't land on a perfectly regular, bot-like cadence — a
+# fresh random value up to this ratio each time (e.g. 1s +/- up to 15%, never a fixed
+# +15% every time), via random.uniform(-jitter, jitter) below.
+JITTER_RATIO = 0.15
 
 _domain_locks = {}
 _domain_locks_guard = threading.Lock()
@@ -128,6 +126,35 @@ def fetch_html(url):
 
     response.raise_for_status()
     return response.text
+
+
+def _throttled_post(url, domain, data):
+    if _abort_event.is_set():
+        raise FetchAborted()
+
+    lock = _get_domain_lock(domain)
+    with lock:
+        if _abort_event.is_set():
+            raise FetchAborted()
+        if _throttle_enabled():
+            elapsed = time.monotonic() - _domain_last_request.get(domain, 0)
+            interval = _interval_for(domain)
+            if elapsed < interval:
+                _sleep_interruptible(interval - elapsed)
+        try:
+            return requests.post(url, data=data, headers=DEFAULT_HEADERS, timeout=REQUEST_TIMEOUT)
+        finally:
+            _domain_last_request[domain] = time.monotonic()
+
+
+def post_form(url, data):
+    """POST a form body, return parsed JSON. Shares the same per-domain throttle/lock as
+    fetch_html — a multi-layer variant product can mean many POSTs to the same domain in
+    a row (one per option combination), so they need to stay just as politely paced."""
+    domain = _domain_of(url)
+    response = _throttled_post(url, domain, data)
+    response.raise_for_status()
+    return response.json()
 
 
 class FetchResult:

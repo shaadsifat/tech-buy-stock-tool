@@ -13,46 +13,182 @@
     icon-only ribbon (the logo switches to the favicon to fit), or click again to expand it. Your
     choice is remembered across visits.</p>
 
-    <p><strong>Dashboard</strong> — click <em>Start Fetching</em> to pull fresh prices/stock for every
-    listed product. While a fetch is running, <em>Stop Fetching</em> appears — clicking it halts things
-    almost immediately (anything already mid-request finishes, anything not yet started is skipped).
-    The 5 stat cards, the charts, and the Quick Summary box all update live while fetching, with no need
-    to reload the page. Once done, use <em>Import in Excel File</em> to export the full report, or
-    <em>Remove Previous Fetched Data</em> to clear results before a fresh run. The Quick Summary box
-    is click-to-copy plain text, ready to paste to management.</p>
+    <p><strong>Dashboard</strong> — click <em>Start Fetching</em> to pull fresh prices/stock from every
+    listed product's Other-site link (Tech Buy's own price/stock comes from the Shopify catalog sync,
+    not this fetch — see below). While a fetch is running, <em>Stop Fetching</em> appears — clicking it
+    halts things almost immediately (anything already mid-request finishes, anything not yet started is
+    skipped). The 5 stat cards, the charts, and the Quick Summary box all update live while fetching,
+    with no need to reload the page. Once done, use <em>Import in Excel File</em> to export the full
+    report, or <em>Remove Previous Fetched Data</em> to clear the Other-site results before a fresh run
+    (Tech Buy's own price/stock is never affected by this, since it doesn't come from this fetch). The
+    Quick Summary box is click-to-copy plain text, ready to paste to management.</p>
     <p class="muted" style="margin-top: -0.5rem;">
         The stat cards: <strong>Total Products</strong>, <strong>Categories</strong>,
-        <strong>Need Action</strong>, <strong>Fetch Problems</strong> (TechBuy Prob + Other Prob + Both
-        Prob combined — products where a fetch failed on one or both sides), and
-        <strong>Perfectly Fetched</strong> (products fetched cleanly with no problems at all).
+        <strong>Need Action</strong>, <strong>Fetch Problems</strong> (Other-site fetches that failed),
+        and <strong>Perfectly Fetched</strong> (Other-site fetches that succeeded cleanly).
     </p>
 
-    <p><strong>Input Product</strong> — add one product at a time, or use Bulk Upload to import many
-    from an Excel file (Category, Product Name, Tech Buy Link, Other website link — unknown categories
-    are created automatically). Export Listed Products downloads your current list in that same format.</p>
+    <p><strong>Other Link Upload</strong> — products themselves only ever come from the Shopify
+    catalog sync now; there's no manual one-by-one "add product" anymore. This page's Bulk Upload
+    only attaches/updates the Other-site link on a product that <em>already exists</em>, matched by
+    its Shopify <strong>Handle</strong> (never by name, which isn't guaranteed unique or stable) —
+    the handle is pulled straight out of the Tech Buy Link column (case-insensitive), since every
+    Tech Buy Link ends in <code>/products/&lt;handle&gt;</code>. Upload an Excel file with columns
+    Category, Product Name, Tech Buy Link, Other website link, in that exact order (Export Listed
+    Products downloads your current list in this exact format, ready to edit and re-upload) —
+    Category/Product Name are only ever used for display in the failure report, never for matching.
+    Each row is checked and reported individually:</p>
+    <ul style="margin-top: 0.4rem; padding-left: 1.2rem; line-height: 1.7;">
+        <li><strong>Link not matched</strong> — the Tech Buy Link doesn't look like a real product
+        link, so no handle could be read from it.</li>
+        <li><strong>New product</strong> — a handle was read fine, but it isn't in the database yet.
+        Bulk upload can't create it; it has to come from the Shopify sync first.</li>
+        <li><strong>Duplicate</strong> — that handle already appeared earlier in the same file.</li>
+    </ul>
 
-    <p><strong>Product List</strong> — search by name, filter any column via the funnel icon on its
-    header (or the Category / Other Site dropdowns), sort by clicking a header, and pick which columns
-    show via Customize Columns. Click any cell to copy its text. Column filters are remembered across
-    visits — they'll still be applied next time you open this page, even after navigating away.
-    Rows update live as a fetch progresses (no reload needed), whether it was started from here or from
-    the Dashboard, and a Stop Fetching control appears here too whenever one is running.</p>
+    <p><strong>No Price Sync</strong> — some products (usually official-distributor items) have a
+    price you set yourself and don't need competitor comparison at all. Tick them here (individually,
+    or via the bulk bar's Mark/Unmark) and they're pulled out of the whole comparison workflow
+    entirely: hidden from Single Product List, Variant Products, and Sync Tracking's Missing Other
+    Link tab, excluded from the Dashboard's counts/charts, and skipped by <em>Start Fetching</em>.
+    Their Other-site link (if any) is kept on record, just ignored — untick to bring a product back
+    into normal tracking. The page header shows how many products are currently flagged, and the No
+    Price Sync column has its own filter (funnel icon) like every other filterable column in the
+    app.</p>
 
-    <p><strong>Bulk actions</strong> — tick the checkbox on the left of any row, or use the checkbox
-    in the header to select every row currently shown on the page. A bar appears with:</p>
+    <p><strong>Single Product List</strong> (products with 0-1 real Shopify variants, and not flagged
+    No Price Sync) — search by name, filter any column via the funnel icon on its header (or the
+    Category / Other Site dropdowns), sort by clicking a header, and pick which columns show via
+    Customize Columns (Category and Shopify Status are hidden by default, still available there).
+    Click any cell to copy its text. Every filter dropdown only ever shows values that actually occur
+    in your data right now — if nothing is currently a Draft, "Draft" simply won't appear as a choice.
+    Column filters are remembered across visits — they'll still be applied next time you open this
+    page, even after navigating away. Rows update live as a fetch progresses (no reload needed),
+    whether it was started from here or from the Dashboard, and a Stop Fetching control appears here
+    too whenever one is running.</p>
+    <p class="muted" style="margin-top: -0.5rem;">
+    If a paired Other-site link quietly grows variants after you originally paired it (common when a
+    single-listing competitor product later gets a color/size option added), fetching detects this:
+    <strong>Stock Status (Other)</strong> shows <span class="badge badge-yes" style="margin: 0 2px;">Variant Found</span>,
+    Need Action = Yes, and Reviewed becomes editable, so you know to move that product over to proper
+    variant tracking. If the Other site still only has exactly one real variant, nothing changes.
+    </p>
+
+    <p><strong>Bulk actions</strong> (Single Product List and Variant Products both have this bar) —
+    tick the checkbox on the left of any row, or use the checkbox in the header to select every row
+    currently shown on the page. A bar appears with:</p>
     <ul style="margin-top: 0.4rem; padding-left: 1.2rem; line-height: 1.7;">
         <li><strong>Mark as Reviewed</strong> — ticks Reviewed for the selected products (skips any
-        already auto-locked because Need Action is No).</li>
-        <li><strong>Re-Fetch Selected</strong> — runs a fresh price/stock fetch for only the selected
-        products, instead of the full list.</li>
+        already auto-locked because Need Action is No). On Variant Products this ticks every variant
+        under each selected product instead, since a product only counts as Reviewed once all of its
+        variants are.</li>
+        <li><strong>Re-Fetch Selected</strong> — runs a fresh Other-site price/stock fetch for only the
+        selected products, instead of the full list.</li>
         <li><strong>Export Selected</strong> — downloads an Excel file containing only the selected
         products, in the same format as the full export.</li>
-        <li><strong>Delete Permanently</strong> — removes the selected products (and their fetched
-        data) for good. Asks for confirmation first, since this can't be undone.</li>
+        <li><strong>Delete Permanently</strong> — removes the selected products (and, on Variant
+        Products, all their variants) for good. Asks for confirmation first, since this can't be
+        undone.</li>
+    </ul>
+
+    <p><strong>Variant Products</strong> (products with 2+ real Shopify variants, and not flagged No
+    Price Sync) — one row per product, click the arrow to expand its full variant breakdown in a
+    nested table underneath. The outer row shows Name, Tech Buy Link, Other Link (there's only ever
+    one Other-site link per product, even with many variants), Shopify Status, an aggregate Fetched
+    Status/Need Action/Reviewed — all computed from that product's variants (Need Action/Fetched
+    Status = "bad" state if any variant has it, "clean" state only once every variant does; Reviewed =
+    true only once every variant is individually reviewed). Ticking a variant's Reviewed checkbox
+    updates the product's aggregate Reviewed status immediately, no reload needed. Customize Variant
+    Columns controls the inner table only (defaults to Variant, Stock (Other), both Regular/Sale
+    prices, Need Action, and Reviewed — everything else, including Match, is available there too).</p>
+
+    <p><strong>Variant matching</strong> — each Tech Buy variant is matched against the Other site
+    purely by variant <em>name</em>, as an order-independent set: for a 2-layer option like Color ×
+    Material, "Red &gt; Silver" and "Silver &gt; Red" (or any other ordering, with any number of
+    shared layers) count as the exact same variant. The inner table's <strong>Match</strong> column
+    shows one of 4 states per variant:</p>
+    <ul style="margin-top: 0.4rem; padding-left: 1.2rem; line-height: 1.7;">
+        <li><span class="badge badge-no" style="margin: 0 2px;">Found</span> — exists by name on both
+        sites. Price/stock differences still drive Need Action/Reviewed exactly like the main
+        comparison logic.</li>
+        <li><span class="badge badge-yes" style="margin: 0 2px;">Not Found</span> — exists on Tech Buy
+        (In Stock) but not on the Other site. Need Action = Yes, Reviewed is editable.</li>
+        <li><span class="badge badge-no" style="margin: 0 2px;">Found TB</span> — exists on Tech Buy,
+        but it's Out of Stock there and missing on the Other site too — normal, not actionable. Need
+        Action = No, Reviewed locks automatically.</li>
+        <li><span class="badge badge-yes" style="margin: 0 2px;">Found OT</span> — exists on the Other
+        site but not on Tech Buy at all. Gets its own row in the inner table (same columns, fully
+        interactive), Need Action = Yes, Reviewed editable — usually means Tech Buy is missing a
+        variant the competitor already carries.</li>
+    </ul>
+    <p class="muted" style="margin-top: -0.5rem;">
+    A product only counts as fully Reviewed once every one of its variants is — including any Found
+    OT rows.
+    </p>
+
+    <p>Above the table, a tab bar sorts every variant-parent product into exactly one bucket, checked
+    in this order (first match wins):</p>
+    <ul style="margin-top: 0.4rem; padding-left: 1.2rem; line-height: 1.7;">
+        <li><strong>Exact Match</strong> — every variant is Found or Found TB. Nothing to chase down.</li>
+        <li><strong>Variant Not Found</strong> — at least one variant is Not Found (checked only among
+        products that didn't already qualify for Exact Match).</li>
+        <li><strong>Missing from Tech Buy</strong> — at least one variant is Found OT (checked only
+        among products left after the first two buckets).</li>
     </ul>
 
     <p><strong>Categories</strong> and <strong>Other Websites</strong> — manage categories, and see
     how many products point to each "Other" site.</p>
+
+    <p><strong>Sync Tracking</strong> — a dedicated page listing everything that needs follow-up
+    from the Shopify sync, across 3 tabs: products missing an Other-site link, products removed from
+    Shopify (only ones that had an Other-site link to begin with — untracked products dropping off
+    Shopify isn't a follow-up item), and products with a variant issue. Every cell is click-to-copy,
+    Stock (Tech Buy) can be sorted and filtered, and Category has its own dropdown. Click the edit
+    icon on any row to jump straight to fixing it.</p>
+
+    <p><strong>Shopify catalog sync</strong> — Tech Buy's own product data (name, price, stock,
+    variants) comes from Shopify's own API instead of scraping the storefront page, since the
+    page could sometimes serve a stale cached price to automated requests. This runs as a separate
+    script (<code>get_product_api_call.py</code>), not a button in this software — run it manually
+    whenever you want to refresh the catalog (e.g. every few days, or after adding new products in
+    Shopify). It:</p>
+    <ul style="margin-top: 0.4rem; padding-left: 1.2rem; line-height: 1.7;">
+        <li>Before pulling anything, <strong>purges</strong> every local product that has no
+        Other-site link and isn't flagged No Price Sync — these were never paired with anything,
+        so they're cleared out and re-created fresh from Shopify if still Active. Only paired
+        products (real Other-site link) and intentionally-unpaired ones (No Price Sync) survive
+        a re-sync untouched.</li>
+        <li>Only syncs <strong>Active</strong> products (in stock or out of stock, doesn't matter —
+        just not Draft). A Draft product is skipped entirely, and if it was already in the database
+        from an earlier sync, it gets flagged Removed instead of silently sticking around.</li>
+        <li>Updates every existing product's Tech Buy name/price/stock, without ever touching the
+        Other-site link or Reviewed status you've already set up.</li>
+        <li>Adds new products it finds, with the Other-site link left blank — pair it up via Other
+        Link Upload or by editing the product directly.</li>
+        <li><strong>Shopify Status</strong> column — shows <span class="badge badge-no" style="margin: 0 2px;">Active</span>
+        for anything currently live on Shopify, or <span class="badge badge-yes" style="margin: 0 2px;">Removed</span>
+        if a product was previously synced but is no longer found Active (unpublished, deleted, or
+        turned Draft) — so nothing just silently disappears.</li>
+        <li><strong>Variant Issue</strong> column — flags a product as <span class="badge badge-yes" style="margin: 0 2px;">Incomplete</span>
+        if its variants don't cover every combination of its own options (e.g. a 3×3 Switch/Color
+        keyboard that only has 8 of the 9 combinations) — hover the badge to see exactly which
+        combination is missing. Usually means someone forgot to finish setting up that product in
+        Shopify.</li>
+        <li>After running the sync, click <em>Start Fetching</em> as normal to pull the Other-site
+        prices and compute Need Action — Tech Buy's side is never fetched by this button at all
+        anymore, only the Other site.</li>
+    </ul>
+
+    <p><strong>Fetched Status</strong> — since Tech Buy's price/stock no longer comes from fetching,
+    this column now reflects the Other-site fetch only, and only has 3 possible values:</p>
+    <ul style="margin-top: 0.4rem; padding-left: 1.2rem; line-height: 1.7;">
+        <li><span class="badge badge-neutral" style="margin: 0 2px;">Fetched</span> — the Other-site
+        page was reached successfully.</li>
+        <li><span class="badge badge-neutral" style="margin: 0 2px;">Fetch Problem</span> — the
+        Other-site page couldn't be reached or parsed.</li>
+        <li><strong>(blank/—)</strong> "Not Fetched" — no Other-site link is paired yet, so there was
+        nothing to fetch (see Sync Tracking's "Missing Other Link" tab).</li>
+    </ul>
 
     <p><strong>How flagging works:</strong></p>
     <ul style="margin-top: 0.4rem; padding-left: 1.2rem; line-height: 1.7;">
@@ -112,10 +248,16 @@
         <li><strong>Database:</strong> SQLite, a single local file at <code>data/app.db</code> — no
         external database server needed.</li>
         <li><strong>Frontend:</strong> server-rendered HTML/CSS with vanilla JavaScript — no framework.</li>
-        <li><strong>Price fetching:</strong> <code>requests</code> + <code>BeautifulSoup</code>, one
-        parser per website, run concurrently across products. Each site gets a polite, randomized gap
-        between requests (a single manual re-fetch of one product skips this, since it's not a burst)
-        to avoid being flagged as bot traffic.</li>
+        <li><strong>Other-site price fetching:</strong> <code>requests</code> + <code>BeautifulSoup</code>,
+        one parser per website, run concurrently across products. Each site gets a polite gap between
+        requests of <strong>1 second, randomly varying up to ±15%</strong> each time (so ~0.85s–1.15s,
+        never a perfectly regular bot-like cadence) — a single manual re-fetch of one product skips
+        this entirely, since it's not a burst.</li>
+        <li><strong>Tech Buy catalog data:</strong> pulled directly from Shopify's Admin GraphQL API
+        (read-only access) via the separate <code>get_product_api_call.py</code> script, instead of
+        scraping — sidesteps a caching/bot-detection issue on the storefront that could otherwise
+        serve stale prices. Credentials live in a local, git-ignored <code>.env</code> file, never
+        committed.</li>
         <li><strong>Excel import/export:</strong> <code>openpyxl</code>.</li>
         <li>Runs entirely on the local PC — no data leaves the machine unless you export or push it
         to GitHub yourself. Version-controlled with Git.</li>

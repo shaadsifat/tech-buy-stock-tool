@@ -1,5 +1,5 @@
 document.addEventListener("DOMContentLoaded", function () {
-    const table = document.getElementById("product-table");
+    const table = document.getElementById("variant-product-table");
     const bulkBar = document.getElementById("bulk-action-bar");
     if (!table || !bulkBar) return;
 
@@ -62,7 +62,7 @@ document.addEventListener("DOMContentLoaded", function () {
         deleteBtn.addEventListener("click", function () {
             const ids = selectedIds();
             if (!ids.length) return;
-            if (!confirm("Permanently delete " + ids.length + " product(s)? This cannot be undone.")) return;
+            if (!confirm("Permanently delete " + ids.length + " product(s) — all their variants included? This cannot be undone.")) return;
 
             deleteBtn.disabled = true;
             fetch("/products/bulk-delete", {
@@ -83,7 +83,7 @@ document.addEventListener("DOMContentLoaded", function () {
             if (!ids.length) return;
 
             markReviewedBtn.disabled = true;
-            fetch("/products/bulk-mark-reviewed", {
+            fetch("/products/variants/bulk-mark-reviewed", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ ids: ids }),
@@ -124,8 +124,8 @@ document.addEventListener("DOMContentLoaded", function () {
                     refetchBtn.textContent = "Fetching " + status.done + "/" + status.total + "...";
                     setTimeout(function () { pollRefetch(originalText); }, 1000);
                 } else {
-                    // rows update live as each product finishes (see product_live_update.js) —
-                    // no reload needed, just restore the button
+                    // no per-cell live-patching for the nested variant tables yet —
+                    // variant_live_update.js reloads the page once the run finishes
                     refetchBtn.disabled = false;
                     refetchBtn.textContent = originalText;
                 }
@@ -159,7 +159,5 @@ document.addEventListener("DOMContentLoaded", function () {
 
     updateBar();
 
-    // Lets an AJAX table-body swap (dynamic search) reset the bulk bar, since the
-    // freshly-fetched rows always come in unchecked.
     window.__resetBulkBar = updateBar;
 });

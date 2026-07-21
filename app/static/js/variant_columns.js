@@ -1,42 +1,34 @@
 document.addEventListener("DOMContentLoaded", function () {
-    const STORAGE_KEY = "productListColumnsV1";
+    const STORAGE_KEY = "variantColumnsV1";
 
     const COLUMN_LABELS = {
-        name: "Product Name",
-        category: "Category",
-        techbuy_link: "Tech Buy Link",
-        other_link: "Other Link",
-        techbuy_stock: "Stock Status (Tech Buy)",
-        other_stock: "Stock Status (Other)",
-        other_site: "Other Site",
+        variant_path: "Variant",
+        techbuy_stock: "Stock (Tech Buy)",
+        other_stock: "Stock (Other)",
         techbuy_regular: "Regular Price",
         techbuy_sale: "Sale Price",
         other_regular: "Regular Price (Other)",
         other_sale: "Sale Price (Other)",
-        regular_diff: "Regular Price Diff",
-        sale_diff: "Sale Price Diff",
+        regular_diff: "Regular Diff",
+        sale_diff: "Sale Diff",
         need_action: "Need Action",
         fetched_status: "Fetched Status",
         shopify_status: "Shopify Status",
-        variant_issue: "Variant Issue",
     };
 
     const DEFAULT_ORDER = [
-        "name", "category", "techbuy_link", "other_link",
-        "techbuy_stock", "other_stock", "other_site",
+        "variant_path", "other_stock",
         "techbuy_regular", "techbuy_sale", "other_regular", "other_sale",
-        "regular_diff", "sale_diff",
-        "need_action", "fetched_status", "shopify_status", "variant_issue",
+        "need_action",
+        "techbuy_stock", "regular_diff", "sale_diff", "fetched_status", "shopify_status",
     ];
-    const DEFAULT_HIDDEN = ["category", "techbuy_link", "other_link", "techbuy_stock", "regular_diff", "sale_diff", "other_site", "shopify_status", "variant_issue"];
+    const DEFAULT_HIDDEN = ["techbuy_stock", "regular_diff", "sale_diff", "fetched_status", "shopify_status"];
 
-    const table = document.getElementById("product-table");
-    if (!table) return;
+    const outerTable = document.getElementById("variant-product-table");
+    if (!outerTable) return;
 
-    const headRow = table.querySelector("thead tr");
-
-    function bodyRows() {
-        return table.querySelectorAll("tbody tr[data-product-row]");
+    function subTables() {
+        return Array.prototype.slice.call(outerTable.querySelectorAll(".variant-sub-table"));
     }
 
     function loadConfig() {
@@ -73,19 +65,19 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     function applyConfig(config) {
-        const fullOrder = ["select"].concat(config.order, ["reviewed", "actions"]);
-
-        reorderRow(headRow, fullOrder);
-        bodyRows().forEach((row) => reorderRow(row, fullOrder));
-
-        const emptyCell = table.querySelector("tbody tr[data-empty-row] td");
-        if (emptyCell) emptyCell.setAttribute("colspan", fullOrder.length);
-
+        const fullOrder = config.order.concat(["reviewed"]);
         const hiddenSet = new Set(config.hidden);
-        table.querySelectorAll("[data-col]").forEach((cell) => {
-            const id = cell.getAttribute("data-col");
-            if (id === "select" || id === "actions" || id === "reviewed") return;
-            cell.style.display = hiddenSet.has(id) ? "none" : "";
+
+        subTables().forEach((sub) => {
+            const headRow = sub.querySelector("thead tr");
+            if (headRow) reorderRow(headRow, fullOrder);
+            sub.querySelectorAll("tbody tr[data-variant-row]").forEach((row) => reorderRow(row, fullOrder));
+
+            sub.querySelectorAll("[data-col]").forEach((cell) => {
+                const id = cell.getAttribute("data-col");
+                if (id === "reviewed") return;
+                cell.style.display = hiddenSet.has(id) ? "none" : "";
+            });
         });
     }
 
@@ -94,7 +86,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
     // Lets an AJAX table-body swap (dynamic search) re-apply column order/visibility
     // to the freshly-fetched rows, since applyConfig re-queries the DOM each call.
-    window.__reapplyColumnConfig = function () {
+    window.__reapplyVariantColumnConfig = function () {
         applyConfig(currentConfig);
     };
 
@@ -106,6 +98,7 @@ document.addEventListener("DOMContentLoaded", function () {
     const cancelBtn = document.getElementById("columns-cancel-btn");
     const saveBtn = document.getElementById("columns-save-btn");
     const resetBtn = document.getElementById("columns-reset-btn");
+    if (!btn || !backdrop) return;
 
     let dragEl = null;
 
@@ -195,71 +188,5 @@ document.addEventListener("DOMContentLoaded", function () {
         localStorage.removeItem(STORAGE_KEY);
         applyConfig(currentConfig);
         buildList(currentConfig);
-    });
-
-    // ---- click-to-copy cells ----
-    const NO_COPY_COLUMNS = ["select", "actions", "reviewed", "techbuy_link", "other_link"];
-    let copyToast = null;
-    let copyToastTimer = null;
-
-    function showCopyToast(x, y) {
-        if (!copyToast) {
-            copyToast = document.createElement("div");
-            copyToast.className = "copy-toast";
-            copyToast.textContent = "Copied!";
-            document.body.appendChild(copyToast);
-        }
-        copyToast.style.left = x + "px";
-        copyToast.style.top = y + "px";
-        copyToast.classList.remove("show");
-        void copyToast.offsetWidth; // restart animation if clicked again quickly
-        copyToast.classList.add("show");
-        clearTimeout(copyToastTimer);
-        copyToastTimer = setTimeout(function () {
-            copyToast.classList.remove("show");
-        }, 900);
-    }
-
-    table.addEventListener("click", function (e) {
-        const td = e.target.closest("td[data-col]");
-        if (!td || !table.contains(td)) return;
-
-        const col = td.getAttribute("data-col");
-        if (NO_COPY_COLUMNS.indexOf(col) !== -1) return;
-
-        const text = (td.getAttribute("data-full-text") || td.innerText).trim();
-        if (!text || text === "—") return;
-
-        if (!navigator.clipboard) return;
-
-        navigator.clipboard.writeText(text).then(function () {
-            showCopyToast(e.clientX, e.clientY);
-            td.classList.remove("copy-flash");
-            void td.offsetWidth;
-            td.classList.add("copy-flash");
-        }).catch(function () {
-            // clipboard unavailable (e.g. non-secure context) — fail silently
-        });
-    });
-
-    // ---- reviewed checkbox ----
-    table.addEventListener("change", function (e) {
-        const checkbox = e.target.closest(".reviewed-checkbox");
-        if (!checkbox) return;
-
-        const productId = checkbox.getAttribute("data-product-id");
-        const reviewed = checkbox.checked;
-        const row = checkbox.closest("tr[data-product-row]");
-        if (row) row.classList.toggle("row-reviewed", reviewed);
-
-        fetch("/products/" + productId + "/reviewed", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ reviewed: reviewed }),
-        }).catch(function () {
-            // revert on failure so the UI doesn't lie about saved state
-            checkbox.checked = !reviewed;
-            if (row) row.classList.toggle("row-reviewed", !reviewed);
-        });
     });
 });

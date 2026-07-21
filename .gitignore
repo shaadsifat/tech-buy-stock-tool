@@ -15,3 +15,7 @@ Thumbs.db
 
 # Claude Code project-local settings (if any get created here later)
 .claude/
+
+# Shopify Storefront API credentials — never committed
+.env
+get_product_api_call.py

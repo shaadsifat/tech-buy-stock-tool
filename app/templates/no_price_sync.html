@@ -1,0 +1,149 @@
+{% extends "base.html" %}
+{% block title %}No Price Sync{% endblock %}
+
+{% macro sort_link(label, key) -%}
+    {% set is_current = (sort == key) %}
+    <a href="{{ url_for('products.no_price_sync_view', q=query, category=category, sort=key, dir=(other_dir if is_current else 'asc'), page=1, size=page_size, filters=filters_json) }}">
+        {{ label }}{% if is_current %} {{ '▲' if direction == 'asc' else '▼' }}{% endif %}
+    </a>
+{%- endmacro %}
+
+{% macro filter_btn(col) -%}
+    <button type="button" class="filter-btn {{ 'active' if col in filters else '' }}" data-filter-col="{{ col }}" aria-label="Filter">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16l-6 8v6l-4 2v-8z"></path></svg>
+    </button>
+{%- endmacro %}
+
+{% block content %}
+<div class="page-header">
+    <h1>No Price Sync</h1>
+    <p>Products with official distributor pricing — we set the price ourselves, so these are excluded from Single Product List, Variant Products, Sync Tracking, and fetching entirely. {{ no_price_sync_count }} product(s) currently flagged.</p>
+</div>
+
+<div class="toolbar">
+    <div class="btn-row" style="align-items: center;">
+        <form method="get" action="{{ url_for('products.no_price_sync_view') }}" class="btn-row" style="align-items: center;">
+            <input type="hidden" name="sort" value="{{ sort }}">
+            <input type="hidden" name="dir" value="{{ direction }}">
+            <input type="hidden" name="size" value="{{ page_size }}">
+            <input type="hidden" name="category" value="{{ category }}">
+            <input type="hidden" name="filters" value="{{ filters_json }}">
+            <input type="text" name="q" value="{{ query }}" placeholder="Search by name..." data-dynamic-search data-table-target="no-sync-table">
+            <button type="submit" class="btn">Search</button>
+            {% if query %}
+            <a href="{{ url_for('products.no_price_sync_view', size=page_size, category=category, filters=filters_json) }}" class="btn btn-secondary">Clear</a>
+            {% endif %}
+        </form>
+
+        <select id="category-select" class="category-select" data-searchable data-placeholder="All Categories" aria-label="Filter by category">
+            <option value="">All Categories</option>
+            {% for c in categories %}
+            <option value="{{ c.name }}" {{ 'selected' if c.name == category else '' }}>{{ c.name }}</option>
+            {% endfor %}
+        </select>
+    </div>
+
+    <div class="btn-row" style="align-items: center;">
+        <span class="muted">Show</span>
+        <select id="page-size-select" class="category-select" aria-label="Rows per page">
+            {% for choice in page_size_choices %}
+            <option value="{{ choice }}" {{ 'selected' if choice == page_size else '' }}>{{ choice }}</option>
+            {% endfor %}
+        </select>
+    </div>
+</div>
+
+<div id="bulk-action-bar" class="bulk-bar" style="display: none;">
+    <span id="bulk-selected-count" class="bulk-bar-count">0 selected</span>
+    <div class="bulk-bar-actions">
+        <button type="button" id="bulk-mark-no-sync-btn" class="btn btn-secondary">Mark as No Price Sync</button>
+        <button type="button" id="bulk-unmark-no-sync-btn" class="btn btn-secondary">Unmark</button>
+    </div>
+    <button type="button" id="bulk-clear-btn" class="icon-btn" title="Clear selection" aria-label="Clear selection">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"></path></svg>
+    </button>
+</div>
+
+<div class="card">
+    <div class="table-scroll">
+    <table id="no-sync-table">
+        <thead>
+            <tr>
+                <th data-col="select" class="select-cell"><input type="checkbox" id="select-all-checkbox" aria-label="Select all"></th>
+                <th data-col="name">{{ sort_link('Product Name', 'name') }}</th>
+                <th data-col="category">{{ sort_link('Category', 'category') }}</th>
+                <th data-col="techbuy_link">Tech Buy Link</th>
+                <th data-col="other_link">Other Link</th>
+                <th data-col="no_price_sync"><span class="th-content">No Price Sync{{ filter_btn('no_price_sync') }}</span></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for p in products %}
+            <tr data-product-row data-product-id="{{ p.id }}" class="{{ 'row-reviewed' if p.no_price_sync else '' }}">
+                <td data-col="select" class="select-cell"><input type="checkbox" class="row-select-checkbox" data-product-id="{{ p.id }}" aria-label="Select {{ p.name }}"></td>
+                <td data-col="name" title="{{ p.name }}" data-full-text="{{ p.name }}">
+                    {{ p.name | truncate(40, True, '...', 0) }}
+                    {% if p.is_variant_parent %}<span class="muted">(variant product)</span>{% endif %}
+                </td>
+                <td data-col="category">{{ p.category }}</td>
+                <td data-col="techbuy_link"><a href="{{ p.techbuy_link }}" target="_blank" rel="noopener">Link</a></td>
+                <td data-col="other_link">{% if p.other_link %}<a href="{{ p.other_link }}" target="_blank" rel="noopener">Link</a>{% else %}<span class="muted">—</span>{% endif %}</td>
+                <td data-col="no_price_sync" class="reviewed-cell">
+                    <input type="checkbox" class="no-sync-checkbox" data-product-id="{{ p.id }}" {{ 'checked' if p.no_price_sync else '' }} aria-label="Mark No Price Sync">
+                </td>
+            </tr>
+            {% else %}
+            <tr data-empty-row><td colspan="6" class="muted">No products found.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    </div>
+
+    <div class="pagination">
+        {% if page > 1 %}
+        <a href="{{ url_for('products.no_price_sync_view', q=query, category=category, sort=sort, dir=direction, size=page_size, page=page-1, filters=filters_json) }}">&laquo; Prev</a>
+        {% endif %}
+
+        {% for p_num in pagination_window(page, total_pages) %}
+            {% if p_num is none %}
+                <span class="pagination-ellipsis">…</span>
+            {% elif p_num == page %}
+                <span class="current">{{ p_num }}</span>
+            {% else %}
+                <a href="{{ url_for('products.no_price_sync_view', q=query, category=category, sort=sort, dir=direction, size=page_size, page=p_num, filters=filters_json) }}">{{ p_num }}</a>
+            {% endif %}
+        {% endfor %}
+
+        {% if page < total_pages %}
+        <a href="{{ url_for('products.no_price_sync_view', q=query, category=category, sort=sort, dir=direction, size=page_size, page=page+1, filters=filters_json) }}">Next &raquo;</a>
+        {% endif %}
+
+        <span class="muted" style="margin-left: 0.75rem;">{{ total }} product(s) total</span>
+    </div>
+</div>
+
+<div id="filter-popover" class="filter-popover" style="display: none;">
+    <div class="filter-popover-header"><strong id="filter-popover-title"></strong></div>
+    <div class="filter-popover-controls">
+        <input type="text" id="filter-search-input" class="filter-search-input" placeholder="Search...">
+        <div class="filter-popover-quick-actions">
+            <button type="button" id="filter-select-all-btn" class="link-btn">Select All</button>
+            <button type="button" id="filter-deselect-all-btn" class="link-btn">Deselect All</button>
+        </div>
+    </div>
+    <div id="filter-popover-body" class="filter-popover-body"></div>
+    <div class="filter-popover-footer">
+        <button type="button" id="filter-clear-btn" class="btn btn-secondary">Clear</button>
+        <button type="button" id="filter-apply-btn" class="btn">Apply</button>
+    </div>
+</div>
+
+<script type="application/json" id="filter-options-data">{{ filter_options | tojson }}</script>
+<script type="application/json" id="filter-active-data">{{ filters | tojson }}</script>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/searchable_select.js') }}"></script>
+<script src="{{ url_for('static', filename='js/dynamic_search.js') }}"></script>
+<script src="{{ url_for('static', filename='js/no_price_sync.js') }}"></script>
+{% endblock %}

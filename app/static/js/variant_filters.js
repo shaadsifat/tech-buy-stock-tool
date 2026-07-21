@@ -6,9 +6,11 @@ document.addEventListener("DOMContentLoaded", function () {
     const FILTER_OPTIONS = JSON.parse(optionsDataEl.textContent || "{}");
     const ACTIVE_FILTERS = JSON.parse(activeDataEl.textContent || "{}");
 
-    // ---- persist filters + page size across navigation (e.g. leaving the page and coming back) ----
-    const FILTERS_STORAGE_KEY = "productListFiltersV1";
-    const PAGE_SIZE_STORAGE_KEY = "productListPageSizeV1";
+    // Separate storage keys from the Single Product List page's filters/page size —
+    // the two pages have different filterable columns, so sharing a key would restore
+    // filters that don't even apply here.
+    const FILTERS_STORAGE_KEY = "variantProductsFiltersV1";
+    const PAGE_SIZE_STORAGE_KEY = "variantProductsPageSizeV1";
 
     function loadStoredFilters() {
         try {
@@ -39,8 +41,6 @@ document.addEventListener("DOMContentLoaded", function () {
         } catch (e) {}
     }
 
-    // Restore whichever of (filters, page size) are missing from the URL, in a single
-    // redirect — not two separate ones — so the page doesn't navigate twice.
     const restoreUrl = new URL(window.location.href);
     let needsRestore = false;
 
@@ -66,18 +66,14 @@ document.addEventListener("DOMContentLoaded", function () {
 
     if (needsRestore) {
         window.location.href = restoreUrl.toString();
-        return; // navigating away — no need to keep initializing this page
+        return;
     }
 
     const COLUMN_LABELS = {
-        category: "Category",
-        techbuy_stock: "Stock Status (Tech Buy)",
-        other_stock: "Stock Status (Other)",
         need_action: "Need Action",
-        fetched_status: "Fetched Status",
         reviewed: "Reviewed",
-        other_site: "Other Site",
         shopify_status: "Shopify Status",
+        fetched_status: "Fetched Status",
         other_link: "Other Link",
     };
 
@@ -137,12 +133,10 @@ document.addEventListener("DOMContentLoaded", function () {
         popoverBody.innerHTML = "";
         if (filterSearchInput) filterSearchInput.value = "";
 
-        const active = ACTIVE_FILTERS[col]; // absent = no filter = treat all as checked
+        const active = ACTIVE_FILTERS[col];
         const allValues = opt.values.slice();
         if (opt.has_null) allValues.push(NULL_VALUE);
 
-        // many-value columns (like Category, with 80+ entries) need the search box —
-        // small ones don't, so hide it to keep the popover compact.
         const showSearch = allValues.length > 8;
         if (filterSearchInput) {
             filterSearchInput.parentElement.style.display = showSearch ? "block" : "none";
@@ -164,31 +158,26 @@ document.addEventListener("DOMContentLoaded", function () {
             cb.checked = !active || active.indexOf(val) !== -1;
             label.appendChild(cb);
             const span = document.createElement("span");
-            span.textContent = val === NULL_VALUE ? "(Not fetched)" : val;
+            span.textContent = val === NULL_VALUE ? "(No other-site data yet)" : val;
             label.appendChild(span);
             popoverBody.appendChild(label);
         });
 
-        // Position it, keeping it fully on-screen both horizontally and vertically —
-        // with 80+ categories the popover is tall, so it easily overflows the bottom
-        // edge if opened near the end of the page without this check.
         popover.style.display = "block";
         popover.style.top = "0px";
         popover.style.left = "0px";
 
         const rect = btn.getBoundingClientRect();
-        const popoverWidth = 240; // matches .filter-popover CSS width
+        const popoverWidth = 240;
         const popoverHeight = popover.offsetHeight;
 
         let left = rect.left + window.scrollX;
         if (rect.left + popoverWidth > window.innerWidth) {
-            // would overflow off the right edge — open leftward from the button instead
             left = rect.right + window.scrollX - popoverWidth;
         }
 
         let top = rect.bottom + window.scrollY + 6;
         if (rect.bottom + popoverHeight + 6 > window.innerHeight) {
-            // would overflow off the bottom edge — open upward from the button instead
             top = rect.top + window.scrollY - popoverHeight - 6;
         }
 
@@ -276,43 +265,7 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     }
 
-    // ---- category dropdown (single-select convenience filter) ----
-    const categorySelect = document.getElementById("category-select");
-    if (categorySelect) {
-        const activeCategory = ACTIVE_FILTERS.category;
-        if (activeCategory && activeCategory.length === 1) {
-            categorySelect.value = activeCategory[0];
-        }
-        categorySelect.addEventListener("change", function () {
-            const filters = currentFilters();
-            if (categorySelect.value) {
-                filters.category = [categorySelect.value];
-            } else {
-                delete filters.category;
-            }
-            navigateWithFilters(filters);
-        });
-    }
-
-    // ---- other site dropdown (single-select convenience filter) ----
-    const otherSiteSelect = document.getElementById("other-site-select");
-    if (otherSiteSelect) {
-        const activeSite = ACTIVE_FILTERS.other_site;
-        if (activeSite && activeSite.length === 1) {
-            otherSiteSelect.value = activeSite[0];
-        }
-        otherSiteSelect.addEventListener("change", function () {
-            const filters = currentFilters();
-            if (otherSiteSelect.value) {
-                filters.other_site = [otherSiteSelect.value];
-            } else {
-                delete filters.other_site;
-            }
-            navigateWithFilters(filters);
-        });
-    }
-
-    // ---- page size dropdown ----
+    // ---- page size dropdown (category dropdown + expand/copy handled in variant_products.js) ----
     const pageSizeSelect = document.getElementById("page-size-select");
     if (pageSizeSelect) {
         pageSizeSelect.addEventListener("change", function () {

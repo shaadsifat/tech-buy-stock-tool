@@ -1,49 +1,19 @@
 {% extends "base.html" %}
-{% block title %}Input Product{% endblock %}
+{% block title %}Other Link Upload{% endblock %}
 {% block content %}
-<h1>Input Product</h1>
-
-<div class="card content-narrow">
-    <h2 style="margin-top: 0; font-size: 1.05rem;">Add Product</h2>
-    <form method="post" action="{{ url_for('products.create_product') }}">
-        <div class="form-group">
-            <label for="category_id">Category</label>
-            <select id="category_id" name="category_id" required>
-                <option value="" disabled selected>Select a category</option>
-                {% for c in categories %}
-                <option value="{{ c.id }}">{{ c.name }}</option>
-                {% endfor %}
-            </select>
-        </div>
-
-        {% if not categories %}
-        <p class="muted">No categories yet — <a href="{{ url_for('categories.categories_view') }}">add one first</a>.</p>
-        {% endif %}
-
-        <div class="form-group">
-            <label for="name">Product Name</label>
-            <input type="text" id="name" name="name" placeholder="e.g. Logitech G102 Lightsync" required>
-        </div>
-
-        <div class="form-group">
-            <label for="techbuy_link">Tech Buy Link</label>
-            <input type="url" id="techbuy_link" name="techbuy_link" placeholder="https://www.techbuy.com.au/product/..." required>
-        </div>
-
-        <div class="form-group">
-            <label for="other_link">Other website link</label>
-            <input type="url" id="other_link" name="other_link" placeholder="https://www.othersite.com/product/..." required>
-        </div>
-
-        <button type="submit" class="btn">Add Product</button>
-    </form>
-</div>
+<h1>Other Link Upload</h1>
+<p class="muted" style="margin-top: -0.5rem;">
+    Products themselves only come from the Shopify catalog sync now — there's no manual
+    one-by-one add anymore. This page only attaches/updates the Other-site link on a
+    product that already exists, matched by its Shopify Handle (pulled straight out of
+    the Tech Buy Link column — never by name, and not case-sensitive).
+</p>
 
 <div class="card">
     <h2 style="margin-top: 0; font-size: 1.05rem;">Bulk Upload</h2>
     <p class="muted" style="margin-top: -0.4rem;">
-        Upload an Excel (.xlsx) file to add many products at once. The first row must be headers,
-        in this exact order:
+        Upload an Excel (.xlsx) file to set the Other-site link on many existing products at once.
+        The first row must be headers, in this exact order:
     </p>
     <div class="format-hint">
         <span>Category</span>
@@ -52,20 +22,22 @@
         <span>Other website link</span>
     </div>
     <p class="muted" style="margin-top: 0.6rem;">
-        Categories that don't exist yet are created automatically.
+        The product is matched by the handle in the Tech Buy Link column — Category and
+        Product Name are only used for your own reference and in the failure report below,
+        never for matching. A Tech Buy Link whose handle doesn't already exist in the
+        database can't be added this way.
     </p>
 
     <form method="post" action="{{ url_for('products.bulk_upload') }}" enctype="multipart/form-data" class="btn-row" style="margin-top: 1rem; align-items: center;">
         <input type="file" name="file" accept=".xlsx" required>
-        <button type="submit" class="btn">Upload &amp; Import</button>
+        <button type="submit" class="btn">Upload &amp; Update</button>
     </form>
 
     {% if bulk_result %}
     <div style="margin-top: 1.25rem;">
         <div class="flash {{ 'flash-error' if bulk_result.failed_rows else 'flash-success' }}">
-            Imported {{ bulk_result.imported }} product(s).
-            {% if bulk_result.failed_rows %}{{ bulk_result.failed_rows|length }} row(s) were not imported — see below.{% endif %}
-            {% if bulk_result.new_categories %}New categories created: {{ bulk_result.new_categories|join(', ') }}.{% endif %}
+            Updated {{ bulk_result.updated }} product(s).
+            {% if bulk_result.failed_rows %}{{ bulk_result.failed_rows|length }} row(s) were not applied — see below.{% endif %}
         </div>
 
         {% if bulk_result.failed_rows %}
@@ -104,7 +76,7 @@
     <h2 style="margin-top: 0; font-size: 1.05rem;">Export Listed Products</h2>
     <p class="muted" style="margin-top: -0.4rem;">
         Download every currently listed product as an Excel file, in the same 4-column format
-        used for Bulk Upload — handy as a backup, or to edit and re-import.
+        used for Bulk Upload — edit the Other website link column and re-import.
     </p>
     <div class="btn-row" style="margin-top: 1rem;">
         <a href="{{ url_for('products.export_products_template') }}" class="btn btn-secondary">

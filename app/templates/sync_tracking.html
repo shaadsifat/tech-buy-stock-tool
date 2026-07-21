@@ -1,0 +1,178 @@
+{% extends "base.html" %}
+{% block title %}Sync Tracking{% endblock %}
+
+{% macro sort_link(label, key) -%}
+    {% set is_current = (sort == key) %}
+    <a href="{{ url_for('products.sync_tracking_view', tab=tab, size=page_size, q=query, category=category, sort=key, dir=(other_dir if is_current else 'asc'), page=1, filters=filters_json) }}">
+        {{ label }}{% if is_current %} {{ '▲' if direction == 'asc' else '▼' }}{% endif %}
+    </a>
+{%- endmacro %}
+
+{% macro price_cell(value) -%}
+    {% if value is not none %}{{ '%.2f'|format(value) }}{% else %}<span class="muted">—</span>{% endif %}
+{%- endmacro %}
+
+{% macro filter_btn(col) -%}
+    <button type="button" class="filter-btn {{ 'active' if col in filters else '' }}" data-filter-col="{{ col }}" aria-label="Filter">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16l-6 8v6l-4 2v-8z"></path></svg>
+    </button>
+{%- endmacro %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Sync Tracking</h1>
+    <p>Follow-up items from the Shopify catalog sync — products needing attention.</p>
+</div>
+
+<div class="toolbar">
+    <div class="btn-row" style="align-items: center;">
+        <a href="{{ url_for('products.sync_tracking_view', tab='missing_link', size=page_size) }}"
+           class="btn {{ 'btn-secondary' if tab != 'missing_link' else '' }}">
+            Missing Other Link ({{ missing_link_count }})
+        </a>
+        <a href="{{ url_for('products.sync_tracking_view', tab='removed', size=page_size) }}"
+           class="btn {{ 'btn-secondary' if tab != 'removed' else '' }}">
+            Removed from Shopify ({{ removed_count }})
+        </a>
+        <a href="{{ url_for('products.sync_tracking_view', tab='variant_issue', size=page_size) }}"
+           class="btn {{ 'btn-secondary' if tab != 'variant_issue' else '' }}">
+            Variant Issues ({{ variant_issue_count }})
+        </a>
+    </div>
+</div>
+
+<div class="toolbar">
+    <div class="btn-row" style="align-items: center;">
+        <form method="get" action="{{ url_for('products.sync_tracking_view') }}" class="btn-row" style="align-items: center;">
+            <input type="hidden" name="tab" value="{{ tab }}">
+            <input type="hidden" name="size" value="{{ page_size }}">
+            <input type="hidden" name="sort" value="{{ sort }}">
+            <input type="hidden" name="dir" value="{{ direction }}">
+            <input type="hidden" name="filters" value="{{ filters_json }}">
+            <input type="hidden" name="category" value="{{ category }}" id="category-hidden-input">
+            <input type="text" name="q" value="{{ query }}" placeholder="Search by name..." data-dynamic-search data-table-target="sync-tracking-table">
+            <button type="submit" class="btn">Search</button>
+            {% if query %}
+            <a href="{{ url_for('products.sync_tracking_view', tab=tab, size=page_size, sort=sort, dir=direction, category=category, filters=filters_json) }}" class="btn btn-secondary">Clear</a>
+            {% endif %}
+        </form>
+
+        <select id="category-select" class="category-select" data-searchable data-placeholder="All Categories" aria-label="Filter by category">
+            <option value="">All Categories</option>
+            {% for c in categories %}
+            <option value="{{ c.name }}" {{ 'selected' if c.name == category else '' }}>{{ c.name }}</option>
+            {% endfor %}
+        </select>
+    </div>
+
+    <div class="btn-row" style="align-items: center;">
+        {% if filters %}
+        <button type="button" id="reset-filters-btn" class="btn btn-secondary">Reset All Filters</button>
+        {% endif %}
+        <span class="muted">Show</span>
+        <select id="page-size-select" class="category-select" aria-label="Products per page">
+            {% for choice in page_size_choices %}
+            <option value="{{ choice }}" {{ 'selected' if choice == page_size else '' }}>{{ choice }}</option>
+            {% endfor %}
+        </select>
+    </div>
+</div>
+
+<div class="card">
+    <div class="table-scroll">
+    <table id="sync-tracking-table">
+        <thead>
+            <tr>
+                <th data-col="name">{{ sort_link('Product Name', 'name') }}</th>
+                <th data-col="category">{{ sort_link('Category', 'category') }}</th>
+                <th data-col="techbuy_link">Tech Buy Link</th>
+                <th data-col="techbuy_regular">Regular Price</th>
+                <th data-col="techbuy_sale">Sale Price</th>
+                <th data-col="techbuy_stock"><span class="th-content">{{ sort_link('Stock (Tech Buy)', 'techbuy_stock') }}{{ filter_btn('techbuy_stock') }}</span></th>
+                {% if tab == 'missing_link' %}
+                <th data-col="other_link">Other Link</th>
+                {% elif tab == 'removed' %}
+                <th data-col="shopify_status">Shopify Status</th>
+                {% else %}
+                <th data-col="variant_issue">Variant Issue</th>
+                {% endif %}
+                <th data-col="actions"></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for p in products %}
+            <tr>
+                <td data-col="name" title="{{ p.name }}" data-full-text="{{ p.name }}">{{ p.name | truncate(40, True, '...', 0) }}</td>
+                <td data-col="category">{{ p.category }}</td>
+                <td data-col="techbuy_link"><a href="{{ p.techbuy_link }}" target="_blank" rel="noopener">Link</a></td>
+                <td data-col="techbuy_regular">{{ price_cell(p.techbuy_regular) }}</td>
+                <td data-col="techbuy_sale">{{ price_cell(p.techbuy_sale) }}</td>
+                <td data-col="techbuy_stock">{{ p.techbuy_stock or '—' }}</td>
+                {% if tab == 'missing_link' %}
+                <td data-col="other_link"><span class="muted">— not set —</span></td>
+                {% elif tab == 'removed' %}
+                <td data-col="shopify_status"><span class="badge badge-yes">Removed</span></td>
+                {% else %}
+                <td data-col="variant_issue" title="{{ p.variant_issue }}" data-full-text="{{ p.variant_issue }}">{{ p.variant_issue }}</td>
+                {% endif %}
+                <td data-col="actions">
+                    <a href="{{ url_for('products.edit_product', product_id=p.id) }}" class="icon-btn" title="Edit" aria-label="Edit {{ p.name }}">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z"></path></svg>
+                    </a>
+                </td>
+            </tr>
+            {% else %}
+            <tr><td colspan="8" class="muted">Nothing here — all clear.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    </div>
+
+    <div class="pagination">
+        {% if page > 1 %}
+        <a href="{{ url_for('products.sync_tracking_view', tab=tab, size=page_size, q=query, category=category, sort=sort, dir=direction, page=page-1, filters=filters_json) }}">&laquo; Prev</a>
+        {% endif %}
+
+        {% for p_num in pagination_window(page, total_pages) %}
+            {% if p_num is none %}
+                <span class="pagination-ellipsis">…</span>
+            {% elif p_num == page %}
+                <span class="current">{{ p_num }}</span>
+            {% else %}
+                <a href="{{ url_for('products.sync_tracking_view', tab=tab, size=page_size, q=query, category=category, sort=sort, dir=direction, page=p_num, filters=filters_json) }}">{{ p_num }}</a>
+            {% endif %}
+        {% endfor %}
+
+        {% if page < total_pages %}
+        <a href="{{ url_for('products.sync_tracking_view', tab=tab, size=page_size, q=query, category=category, sort=sort, dir=direction, page=page+1, filters=filters_json) }}">Next &raquo;</a>
+        {% endif %}
+
+        <span class="muted" style="margin-left: 0.75rem;">{{ total }} product(s) total</span>
+    </div>
+</div>
+
+<div id="filter-popover" class="filter-popover" style="display: none;">
+    <div class="filter-popover-header"><strong id="filter-popover-title"></strong></div>
+    <div class="filter-popover-controls">
+        <input type="text" id="filter-search-input" class="filter-search-input" placeholder="Search...">
+        <div class="filter-popover-quick-actions">
+            <button type="button" id="filter-select-all-btn" class="link-btn">Select All</button>
+            <button type="button" id="filter-deselect-all-btn" class="link-btn">Deselect All</button>
+        </div>
+    </div>
+    <div id="filter-popover-body" class="filter-popover-body"></div>
+    <div class="filter-popover-footer">
+        <button type="button" id="filter-clear-btn" class="btn btn-secondary">Clear</button>
+        <button type="button" id="filter-apply-btn" class="btn">Apply</button>
+    </div>
+</div>
+
+<script type="application/json" id="filter-options-data">{{ filter_options | tojson }}</script>
+<script type="application/json" id="filter-active-data">{{ filters | tojson }}</script>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/searchable_select.js') }}"></script>
+<script src="{{ url_for('static', filename='js/dynamic_search.js') }}"></script>
+<script src="{{ url_for('static', filename='js/sync_tracking.js') }}"></script>
+{% endblock %}
