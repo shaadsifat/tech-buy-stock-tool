@@ -37,11 +37,12 @@
     </div>
 
     <div class="card about-card">
-      <p class="about-text"><strong>About the software</strong></p>
-      <p class="about-text">Tech Buy Stock Tool was built to solve a simple but time-consuming problem: keeping Tech Buy's prices and stock competitive means constantly checking what rival stores are charging for the same products, and doing that by hand across thousands of listings isn't realistic for a small team. So the software does the checking automatically. Every so often, it pulls Tech Buy's full product list — names, prices, stock — straight from the store itself, then visits the matching product page on competitor sites like StarTech.com.bd to see what they're currently charging and whether they have it in stock.</p>
-      <p class="about-text">It compares the two, and if a price is too far off or the stock status doesn't line up, that product gets flagged as needing a look. Products that come in colors, sizes, or other options are tracked option by option rather than as one lump product, so a mismatch on just the "Black" version doesn't get missed inside an otherwise-fine listing — and if a competitor is selling an option Tech Buy doesn't even list yet, that gets surfaced too. A few products, usually ones with an official distributor price, can be marked to skip comparison entirely, since there's nothing to check them against.</p>
-      <p class="about-text">Everything flagged shows up in one place on a dashboard, with a running summary that updates as checks happen and can be copied straight into a message to management. Once someone fixes a price or restocks an item, it gets ticked off — and the next check will confirm whether the fix actually took. Results can be exported to a spreadsheet at any point to share with the team.</p>
-      <p class="about-text">Tech Buy's own side of the comparison — names, prices, stock, whether a listing is even live — is pulled straight from the store automatically, so nobody has to type product details in by hand. A separate follow-up view keeps track of anything left over from that pull: products still missing a competitor link to compare against, ones that disappeared from the store, or ones set up with an incomplete set of options — so nothing quietly falls through the cracks.</p>
+      <p class="about-text"><strong>Dashboard</strong> — click <em>Start Fetching</em> to pull fresh prices/stock from every listed product's Other-site link (Tech Buy's own price/stock comes from the Shopify catalog sync, not this fetch). While a fetch is running, <em>Stop Fetching</em> appears — clicking it halts things almost immediately. The stat cards, charts, and Quick Summary box all update live while fetching, with no need to reload the page. Once done, use <em>Import in Excel File</em> to export the full report.</p>
+      <p class="about-text"><strong>No Price Sync</strong> — some products (usually official-distributor items) have a price set manually and don't need competitor comparison at all. Flagging them pulls them out of the whole comparison workflow entirely: hidden from the product lists, excluded from the Dashboard's counts/charts, and skipped by <em>Start Fetching</em>. Their Other-site link, if any, is kept on record, just ignored.</p>
+      <p class="about-text"><strong>Single Product List</strong> and <strong>Variant Products</strong> — every product is tracked, searched, filtered, and sorted, with products that have color/size/etc. options broken down variant by variant rather than as one lump product, so a mismatch on just one option doesn't get missed inside an otherwise-fine listing.</p>
+      <p class="about-text"><strong>How flagging works</strong> — <strong>Need Action</strong> = <span class="badge badge-yes">Yes</span> means either the price differs by more than the allowed tolerance, or Tech Buy's stock status doesn't match the Other site's. <strong>Reviewed</strong> gets ticked once the issue is manually fixed on Tech Buy's store, and auto-locks itself when Need Action is already <span class="badge badge-no">No</span> — nothing to review.</p>
+      <p class="about-text"><strong>Sync Tracking</strong> — a dedicated page listing everything that needs follow-up from the Shopify sync: products missing an Other-site link, products removed from Shopify, and products with an incomplete set of variant options.</p>
+      <p class="about-text"><strong>Shopify catalog sync</strong> — Tech Buy's own product data (name, price, stock, variants) comes from Shopify's own API instead of scraping the storefront page. This runs as a separate script, not a button in the software — run it manually whenever you want to refresh the catalog. It updates every existing product's Tech Buy name/price/stock without touching the Other-site link or Reviewed status already set up, and adds new products with the Other-site link left blank, ready to pair up.</p>
     </div>
 
     <section class="card" id="architecture">
@@ -54,13 +55,13 @@
   "lineColor": "#1f6f91", "secondaryColor": "#fff4e5", "secondaryBorderColor": "#f7941d",
   "tertiaryColor": "#ecfdf5", "tertiaryBorderColor": "#047857", "background": "#ffffff",
   "mainBkg": "#e7f2f7", "clusterBkg": "#f4f7fa", "clusterBorder": "#cbd5e1",
-  "edgeLabelBackground": "#ffffff", "fontFamily": "-apple-system, Segoe UI, Roboto, Inter, Arial, sans-serif",
+  "edgeLabelBackground": "#ffffff",
   "actorBkg": "#ffffff", "actorBorder": "#1f6f91", "actorTextColor": "#111827", "actorLineColor": "#1f6f91",
   "signalColor": "#1f6f91", "signalTextColor": "#111827", "labelBoxBkgColor": "#e7f2f7",
   "labelBoxBorderColor": "#1f6f91", "labelTextColor": "#111827", "loopTextColor": "#6b7280",
   "noteBkgColor": "#fff4e5", "noteBorderColor": "#f7941d", "noteTextColor": "#111827",
   "activationBorderColor": "#f7941d", "activationBkgColor": "#fff4e5", "sequenceNumberColor": "#ffffff"
-}}}%%
+}, "flowchart": {"padding": 25, "useMaxWidth": false}, "er": {"entityPadding": 25, "useMaxWidth": false}}}%%
 flowchart TB
   subgraph client["Browser"]
     UI["Dashboard · Product Lists · Variant Products — No Price Sync · Sync Tracking · Guide"]
@@ -112,13 +113,13 @@ flowchart TB
   "lineColor": "#1f6f91", "secondaryColor": "#fff4e5", "secondaryBorderColor": "#f7941d",
   "tertiaryColor": "#ecfdf5", "tertiaryBorderColor": "#047857", "background": "#ffffff",
   "mainBkg": "#e7f2f7", "clusterBkg": "#f4f7fa", "clusterBorder": "#cbd5e1",
-  "edgeLabelBackground": "#ffffff", "fontFamily": "-apple-system, Segoe UI, Roboto, Inter, Arial, sans-serif",
+  "edgeLabelBackground": "#ffffff",
   "actorBkg": "#ffffff", "actorBorder": "#1f6f91", "actorTextColor": "#111827", "actorLineColor": "#1f6f91",
   "signalColor": "#1f6f91", "signalTextColor": "#111827", "labelBoxBkgColor": "#e7f2f7",
   "labelBoxBorderColor": "#1f6f91", "labelTextColor": "#111827", "loopTextColor": "#6b7280",
   "noteBkgColor": "#fff4e5", "noteBorderColor": "#f7941d", "noteTextColor": "#111827",
   "activationBorderColor": "#f7941d", "activationBkgColor": "#fff4e5", "sequenceNumberColor": "#ffffff"
-}}}%%
+}, "flowchart": {"padding": 25, "useMaxWidth": false}, "er": {"entityPadding": 25, "useMaxWidth": false}}}%%
 erDiagram
   CATEGORIES ||--o{ PRODUCTS : "groups"
   PRODUCTS ||--o| FETCH_RESULTS : "single-product result"
@@ -182,13 +183,13 @@ erDiagram
   "lineColor": "#1f6f91", "secondaryColor": "#fff4e5", "secondaryBorderColor": "#f7941d",
   "tertiaryColor": "#ecfdf5", "tertiaryBorderColor": "#047857", "background": "#ffffff",
   "mainBkg": "#e7f2f7", "clusterBkg": "#f4f7fa", "clusterBorder": "#cbd5e1",
-  "edgeLabelBackground": "#ffffff", "fontFamily": "-apple-system, Segoe UI, Roboto, Inter, Arial, sans-serif",
+  "edgeLabelBackground": "#ffffff",
   "actorBkg": "#ffffff", "actorBorder": "#1f6f91", "actorTextColor": "#111827", "actorLineColor": "#1f6f91",
   "signalColor": "#1f6f91", "signalTextColor": "#111827", "labelBoxBkgColor": "#e7f2f7",
   "labelBoxBorderColor": "#1f6f91", "labelTextColor": "#111827", "loopTextColor": "#6b7280",
   "noteBkgColor": "#fff4e5", "noteBorderColor": "#f7941d", "noteTextColor": "#111827",
   "activationBorderColor": "#f7941d", "activationBkgColor": "#fff4e5", "sequenceNumberColor": "#ffffff"
-}}}%%
+}, "flowchart": {"padding": 25, "useMaxWidth": false}, "er": {"entityPadding": 25, "useMaxWidth": false}}}%%
 flowchart TB
   subgraph routes_pkg["app/routes"]
     main_r["main.py — Dashboard · fetch control · export"]
@@ -238,13 +239,13 @@ flowchart TB
   "lineColor": "#1f6f91", "secondaryColor": "#fff4e5", "secondaryBorderColor": "#f7941d",
   "tertiaryColor": "#ecfdf5", "tertiaryBorderColor": "#047857", "background": "#ffffff",
   "mainBkg": "#e7f2f7", "clusterBkg": "#f4f7fa", "clusterBorder": "#cbd5e1",
-  "edgeLabelBackground": "#ffffff", "fontFamily": "-apple-system, Segoe UI, Roboto, Inter, Arial, sans-serif",
+  "edgeLabelBackground": "#ffffff",
   "actorBkg": "#ffffff", "actorBorder": "#1f6f91", "actorTextColor": "#111827", "actorLineColor": "#1f6f91",
   "signalColor": "#1f6f91", "signalTextColor": "#111827", "labelBoxBkgColor": "#e7f2f7",
   "labelBoxBorderColor": "#1f6f91", "labelTextColor": "#111827", "loopTextColor": "#6b7280",
   "noteBkgColor": "#fff4e5", "noteBorderColor": "#f7941d", "noteTextColor": "#111827",
   "activationBorderColor": "#f7941d", "activationBkgColor": "#fff4e5", "sequenceNumberColor": "#ffffff"
-}}}%%
+}, "flowchart": {"padding": 25, "useMaxWidth": false}, "er": {"entityPadding": 25, "useMaxWidth": false}}}%%
 flowchart LR
   actor(["Digital &amp; IT Executive — Tech Buy BD"])
 
@@ -284,13 +285,13 @@ flowchart LR
   "lineColor": "#1f6f91", "secondaryColor": "#fff4e5", "secondaryBorderColor": "#f7941d",
   "tertiaryColor": "#ecfdf5", "tertiaryBorderColor": "#047857", "background": "#ffffff",
   "mainBkg": "#e7f2f7", "clusterBkg": "#f4f7fa", "clusterBorder": "#cbd5e1",
-  "edgeLabelBackground": "#ffffff", "fontFamily": "-apple-system, Segoe UI, Roboto, Inter, Arial, sans-serif",
+  "edgeLabelBackground": "#ffffff",
   "actorBkg": "#ffffff", "actorBorder": "#1f6f91", "actorTextColor": "#111827", "actorLineColor": "#1f6f91",
   "signalColor": "#1f6f91", "signalTextColor": "#111827", "labelBoxBkgColor": "#e7f2f7",
   "labelBoxBorderColor": "#1f6f91", "labelTextColor": "#111827", "loopTextColor": "#6b7280",
   "noteBkgColor": "#fff4e5", "noteBorderColor": "#f7941d", "noteTextColor": "#111827",
   "activationBorderColor": "#f7941d", "activationBkgColor": "#fff4e5", "sequenceNumberColor": "#ffffff"
-}}}%%
+}, "flowchart": {"padding": 25, "useMaxWidth": false}, "er": {"entityPadding": 25, "useMaxWidth": false}}}%%
 sequenceDiagram
   actor User
   participant UI as Dashboard (JS)
@@ -339,13 +340,13 @@ sequenceDiagram
   "lineColor": "#1f6f91", "secondaryColor": "#fff4e5", "secondaryBorderColor": "#f7941d",
   "tertiaryColor": "#ecfdf5", "tertiaryBorderColor": "#047857", "background": "#ffffff",
   "mainBkg": "#e7f2f7", "clusterBkg": "#f4f7fa", "clusterBorder": "#cbd5e1",
-  "edgeLabelBackground": "#ffffff", "fontFamily": "-apple-system, Segoe UI, Roboto, Inter, Arial, sans-serif",
+  "edgeLabelBackground": "#ffffff",
   "actorBkg": "#ffffff", "actorBorder": "#1f6f91", "actorTextColor": "#111827", "actorLineColor": "#1f6f91",
   "signalColor": "#1f6f91", "signalTextColor": "#111827", "labelBoxBkgColor": "#e7f2f7",
   "labelBoxBorderColor": "#1f6f91", "labelTextColor": "#111827", "loopTextColor": "#6b7280",
   "noteBkgColor": "#fff4e5", "noteBorderColor": "#f7941d", "noteTextColor": "#111827",
   "activationBorderColor": "#f7941d", "activationBkgColor": "#fff4e5", "sequenceNumberColor": "#ffffff"
-}}}%%
+}, "flowchart": {"padding": 25, "useMaxWidth": false}, "er": {"entityPadding": 25, "useMaxWidth": false}}}%%
 sequenceDiagram
   actor Exec as Digital &amp; IT Exec
   participant Script as get_product_api_call.py
@@ -385,13 +386,13 @@ sequenceDiagram
   "lineColor": "#1f6f91", "secondaryColor": "#fff4e5", "secondaryBorderColor": "#f7941d",
   "tertiaryColor": "#ecfdf5", "tertiaryBorderColor": "#047857", "background": "#ffffff",
   "mainBkg": "#e7f2f7", "clusterBkg": "#f4f7fa", "clusterBorder": "#cbd5e1",
-  "edgeLabelBackground": "#ffffff", "fontFamily": "-apple-system, Segoe UI, Roboto, Inter, Arial, sans-serif",
+  "edgeLabelBackground": "#ffffff",
   "actorBkg": "#ffffff", "actorBorder": "#1f6f91", "actorTextColor": "#111827", "actorLineColor": "#1f6f91",
   "signalColor": "#1f6f91", "signalTextColor": "#111827", "labelBoxBkgColor": "#e7f2f7",
   "labelBoxBorderColor": "#1f6f91", "labelTextColor": "#111827", "loopTextColor": "#6b7280",
   "noteBkgColor": "#fff4e5", "noteBorderColor": "#f7941d", "noteTextColor": "#111827",
   "activationBorderColor": "#f7941d", "activationBkgColor": "#fff4e5", "sequenceNumberColor": "#ffffff"
-}}}%%
+}, "flowchart": {"padding": 25, "useMaxWidth": false}, "er": {"entityPadding": 25, "useMaxWidth": false}}}%%
 flowchart TD
   start(["For each Tech Buy variant"]) --> match{"Name matches an other-site variant?"}
   match -->|Yes| found["Found — compare price / stock as normal"]
@@ -434,7 +435,7 @@ flowchart TD
 
 <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
 <script>
-  mermaid.initialize({ startOnLoad: true, securityLevel: "loose", fontFamily: "-apple-system, Segoe UI, Roboto, Inter, Arial, sans-serif" });
+  mermaid.initialize({ startOnLoad: true, securityLevel: "loose" });
 </script>
 <script src="script.js"></script>
 </body>
