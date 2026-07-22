@@ -1,0 +1,439 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tech Buy Stock Tool — System Diagrams</title>
+<meta name="description" content="Architecture, database, and behavior diagrams for the Tech Buy Stock Tool, styled and branded like the app itself.">
+<link rel="icon" type="image/webp" href="favicon.webp">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="app-shell">
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <div class="brand-logo-wrap">
+        <img src="techbuy-logo.webp" alt="Tech Buy" class="brand-logo">
+      </div>
+      <div class="sub">System Diagrams</div>
+    </div>
+    <p class="sidebar-label">Contents</p>
+    <nav id="toc-nav">
+      <a href="#architecture" data-target="architecture"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg><span class="num">01</span> Architecture</a>
+      <a href="#database" data-target="database"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"></ellipse><path d="M21 5v6c0 1.7-4 3-9 3s-9-1.3-9-3V5"></path><path d="M3 11v6c0 1.7 4 3 9 3s9-1.3 9-3v-6"></path></svg><span class="num">02</span> Database Schema</a>
+      <a href="#components" data-target="components"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"></rect><rect x="14" y="3" width="7" height="7" rx="1"></rect><rect x="3" y="14" width="7" height="7" rx="1"></rect><rect x="14" y="14" width="7" height="7" rx="1"></rect></svg><span class="num">03</span> Module Components</a>
+      <a href="#usecases" data-target="usecases"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="4"></circle><path d="M2 21v-1c0-3 3-5 7-5s7 2 7 5v1"></path><path d="M16 11l2 2 4-4"></path></svg><span class="num">04</span> Use Cases</a>
+      <a href="#seq-fetch" data-target="seq-fetch"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-3-6.7"></path><path d="M21 3v6h-6"></path></svg><span class="num">05</span> Sequence — Fetching</a>
+      <a href="#seq-sync" data-target="seq-sync"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.5 19a4.5 4.5 0 0 0 0-9 6 6 0 0 0-11.4-2A5 5 0 0 0 6 18h11.5z"></path></svg><span class="num">06</span> Sequence — Shopify Sync</a>
+      <a href="#activity" data-target="activity"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="6" y1="3" x2="6" y2="15"></line><circle cx="18" cy="6" r="3"></circle><circle cx="6" cy="18" r="3"></circle><path d="M18 9a9 9 0 0 1-9 9"></path></svg><span class="num">07</span> Variant Matching</a>
+    </nav>
+    <div class="sidebar-footer">Tech Buy BD</div>
+  </aside>
+
+  <div class="main-area">
+    <div class="page-header">
+      <h1>System Diagrams</h1>
+      <p>Architecture, database, and behavior reference for the Tech Buy Stock Tool — a Flask + SQLite app that compares Tech Buy's prices and stock against competitor sites.</p>
+    </div>
+
+    <div class="card about-card">
+      <p class="about-text"><strong>About the software</strong></p>
+      <p class="about-text">Tech Buy Stock Tool was built to solve a simple but time-consuming problem: keeping Tech Buy's prices and stock competitive means constantly checking what rival stores are charging for the same products, and doing that by hand across thousands of listings isn't realistic for a small team. So the software does the checking automatically. Every so often, it pulls Tech Buy's full product list — names, prices, stock — straight from the store itself, then visits the matching product page on competitor sites like StarTech.com.bd to see what they're currently charging and whether they have it in stock.</p>
+      <p class="about-text">It compares the two, and if a price is too far off or the stock status doesn't line up, that product gets flagged as needing a look — right down to individual options like color or connector type, not just the product as a whole. Everything flagged shows up in one place, ready to review and fix, and can be exported to a spreadsheet to share with the team. The result: instead of someone opening dozens of competitor tabs every day, the tool quietly does that checking in the background and only surfaces what actually needs a human decision.</p>
+    </div>
+
+    <section class="card" id="architecture">
+      <div class="card-head"><span class="card-num">01</span><h2>High-Level System Architecture</h2></div>
+      <p class="caption">Three moving parts: the Flask app itself, a threaded fetch subsystem that scrapes competitor sites, and a standalone script that pulls Tech Buy's own catalog straight from Shopify. All three read and write the same SQLite file.</p>
+      <div class="diagram-frame">
+<pre class="mermaid">
+%%{init: {"theme": "base", "themeVariables": {
+  "primaryColor": "#e7f2f7", "primaryTextColor": "#111827", "primaryBorderColor": "#1f6f91",
+  "lineColor": "#1f6f91", "secondaryColor": "#fff4e5", "secondaryBorderColor": "#f7941d",
+  "tertiaryColor": "#ecfdf5", "tertiaryBorderColor": "#047857", "background": "#ffffff",
+  "mainBkg": "#e7f2f7", "clusterBkg": "#f4f7fa", "clusterBorder": "#cbd5e1",
+  "edgeLabelBackground": "#ffffff", "fontFamily": "-apple-system, Segoe UI, Roboto, Inter, Arial, sans-serif",
+  "actorBkg": "#ffffff", "actorBorder": "#1f6f91", "actorTextColor": "#111827", "actorLineColor": "#1f6f91",
+  "signalColor": "#1f6f91", "signalTextColor": "#111827", "labelBoxBkgColor": "#e7f2f7",
+  "labelBoxBorderColor": "#1f6f91", "labelTextColor": "#111827", "loopTextColor": "#6b7280",
+  "noteBkgColor": "#fff4e5", "noteBorderColor": "#f7941d", "noteTextColor": "#111827",
+  "activationBorderColor": "#f7941d", "activationBkgColor": "#fff4e5", "sequenceNumberColor": "#ffffff"
+}}}%%
+flowchart TB
+  subgraph client["Browser"]
+    UI["Dashboard · Product Lists · Variant Products — No Price Sync · Sync Tracking · Guide"]
+  end
+
+  subgraph server["Flask App — run.py via Waitress"]
+    direction TB
+    routes["Route Blueprints — main_bp · products_bp · categories_bp"]
+    models["models.py — query + business-logic layer"]
+    routes --> models
+  end
+
+  subgraph fetchsub["Fetch Subsystem — app/scraping"]
+    direction TB
+    runner["runner.py — ThreadPoolExecutor orchestration"]
+    registry["registry.py — domain → parser lookup"]
+    parsers["startech.py · other_sites.py — requests + BeautifulSoup"]
+    rules["compare.py · variant_match.py — tolerance + match rules"]
+    runner --> registry --> parsers
+    runner --> rules
+  end
+
+  subgraph syncsub["Shopify Catalog Sync — standalone"]
+    script["get_product_api_call.py — run manually"]
+  end
+
+  db[("SQLite — data/app.db")]
+  other["Other-site storefronts — StarTech.com.bd and others"]
+  shopify["Shopify Admin GraphQL API"]
+
+  UI <-->|"HTTP / fetch()"| routes
+  models <--> db
+  routes -->|"Start Fetching"| runner
+  runner --> models
+  parsers -->|"HTTPS, throttled"| other
+  script -->|"product + variant query"| shopify
+  script --> models
+</pre>
+      </div>
+    </section>
+
+    <section class="card" id="database">
+      <div class="card-head"><span class="card-num">02</span><h2>Database Schema</h2></div>
+      <p class="caption">Four tables. A variant-parent product gets one <code>products</code> row plus one <code>product_variants</code> row per variant; a single-variant product gets one <code>products</code> row plus one <code>fetch_results</code> row instead. A <code>product_variants</code> row with <code>shopify_variant_id = NULL</code> is a synthetic "Found on Other site, missing from Tech Buy" row, not a real Shopify variant.</p>
+      <div class="diagram-frame">
+<pre class="mermaid">
+%%{init: {"theme": "base", "themeVariables": {
+  "primaryColor": "#e7f2f7", "primaryTextColor": "#111827", "primaryBorderColor": "#1f6f91",
+  "lineColor": "#1f6f91", "secondaryColor": "#fff4e5", "secondaryBorderColor": "#f7941d",
+  "tertiaryColor": "#ecfdf5", "tertiaryBorderColor": "#047857", "background": "#ffffff",
+  "mainBkg": "#e7f2f7", "clusterBkg": "#f4f7fa", "clusterBorder": "#cbd5e1",
+  "edgeLabelBackground": "#ffffff", "fontFamily": "-apple-system, Segoe UI, Roboto, Inter, Arial, sans-serif",
+  "actorBkg": "#ffffff", "actorBorder": "#1f6f91", "actorTextColor": "#111827", "actorLineColor": "#1f6f91",
+  "signalColor": "#1f6f91", "signalTextColor": "#111827", "labelBoxBkgColor": "#e7f2f7",
+  "labelBoxBorderColor": "#1f6f91", "labelTextColor": "#111827", "loopTextColor": "#6b7280",
+  "noteBkgColor": "#fff4e5", "noteBorderColor": "#f7941d", "noteTextColor": "#111827",
+  "activationBorderColor": "#f7941d", "activationBkgColor": "#fff4e5", "sequenceNumberColor": "#ffffff"
+}}}%%
+erDiagram
+  CATEGORIES ||--o{ PRODUCTS : "groups"
+  PRODUCTS ||--o| FETCH_RESULTS : "single-product result"
+  PRODUCTS ||--o{ PRODUCT_VARIANTS : "variant rows"
+
+  CATEGORIES {
+    int id PK
+    string name UK
+  }
+  PRODUCTS {
+    int id PK
+    int category_id FK
+    string name
+    string techbuy_link
+    string other_link "'' if unpaired"
+    bool reviewed
+    string shopify_handle "match key for re-sync"
+    string shopify_status "ACTIVE or DRAFT"
+    bool shopify_removed
+    string variant_issue "incomplete option matrix"
+    bool no_price_sync "excluded from comparison"
+  }
+  FETCH_RESULTS {
+    int product_id PK "also FK to PRODUCTS.id"
+    real techbuy_regular
+    real techbuy_sale
+    string techbuy_stock
+    real other_regular
+    real other_sale
+    string other_stock
+    string need_action
+    string updated
+    string fetched_status
+  }
+  PRODUCT_VARIANTS {
+    int id PK
+    int product_id FK
+    string shopify_variant_id "NULL = Found-OT row"
+    string variant_path "e.g. Red greater than Silver"
+    real techbuy_regular
+    real techbuy_sale
+    string techbuy_stock
+    real other_regular
+    real other_sale
+    string other_stock
+    string need_action
+    bool reviewed
+    string match_status "found / not_found / found_tb / found_ot"
+  }
+</pre>
+      </div>
+    </section>
+
+    <section class="card" id="components">
+      <div class="card-head"><span class="card-num">03</span><h2>Module Components</h2></div>
+      <p class="caption">The codebase is procedural, not object-oriented — there are no application classes to diagram, so this component view stands in for a class diagram, showing how the Python packages depend on each other instead.</p>
+      <div class="diagram-frame">
+<pre class="mermaid">
+%%{init: {"theme": "base", "themeVariables": {
+  "primaryColor": "#e7f2f7", "primaryTextColor": "#111827", "primaryBorderColor": "#1f6f91",
+  "lineColor": "#1f6f91", "secondaryColor": "#fff4e5", "secondaryBorderColor": "#f7941d",
+  "tertiaryColor": "#ecfdf5", "tertiaryBorderColor": "#047857", "background": "#ffffff",
+  "mainBkg": "#e7f2f7", "clusterBkg": "#f4f7fa", "clusterBorder": "#cbd5e1",
+  "edgeLabelBackground": "#ffffff", "fontFamily": "-apple-system, Segoe UI, Roboto, Inter, Arial, sans-serif",
+  "actorBkg": "#ffffff", "actorBorder": "#1f6f91", "actorTextColor": "#111827", "actorLineColor": "#1f6f91",
+  "signalColor": "#1f6f91", "signalTextColor": "#111827", "labelBoxBkgColor": "#e7f2f7",
+  "labelBoxBorderColor": "#1f6f91", "labelTextColor": "#111827", "loopTextColor": "#6b7280",
+  "noteBkgColor": "#fff4e5", "noteBorderColor": "#f7941d", "noteTextColor": "#111827",
+  "activationBorderColor": "#f7941d", "activationBkgColor": "#fff4e5", "sequenceNumberColor": "#ffffff"
+}}}%%
+flowchart TB
+  subgraph routes_pkg["app/routes"]
+    main_r["main.py — Dashboard · fetch control · export"]
+    products_r["products.py — Product / Variant / No Price Sync / Sync Tracking pages"]
+    categories_r["categories.py — Category CRUD"]
+  end
+
+  models_mod["app/models.py — ~70 functions: queries, filters, aggregation, mutations"]
+
+  subgraph scraping_pkg["app/scraping"]
+    base_s["base.py — throttled HTTP session"]
+    registry_s["registry.py — domain → parser"]
+    startech_s["startech.py — real StarTech parser"]
+    other_s["other_sites.py — generic placeholder parser"]
+    compare_s["compare.py — price-tolerance rules"]
+    match_s["variant_match.py — variant classification"]
+    runner_s["runner.py — fetch orchestration"]
+  end
+
+  export_mod["app/export/excel_export.py — openpyxl workbook builder"]
+  db_mod["app/db.py — schema + migrations"]
+  import_mod["app/import_products.py — bulk-upload parsing"]
+
+  routes_pkg --> models_mod
+  routes_pkg --> runner_s
+  routes_pkg --> export_mod
+  routes_pkg --> import_mod
+  runner_s --> registry_s
+  registry_s --> startech_s
+  registry_s --> other_s
+  runner_s --> compare_s
+  runner_s --> match_s
+  runner_s --> base_s
+  runner_s --> models_mod
+  models_mod --> db_mod
+</pre>
+      </div>
+    </section>
+
+    <section class="card" id="usecases">
+      <div class="card-head"><span class="card-num">04</span><h2>Use Cases</h2></div>
+      <p class="caption">One actor operates the whole system today: the Digital &amp; IT Executive. The Shopify sync is triggered by the same person running a script manually, not a second actor.</p>
+      <div class="diagram-frame">
+<pre class="mermaid">
+%%{init: {"theme": "base", "themeVariables": {
+  "primaryColor": "#e7f2f7", "primaryTextColor": "#111827", "primaryBorderColor": "#1f6f91",
+  "lineColor": "#1f6f91", "secondaryColor": "#fff4e5", "secondaryBorderColor": "#f7941d",
+  "tertiaryColor": "#ecfdf5", "tertiaryBorderColor": "#047857", "background": "#ffffff",
+  "mainBkg": "#e7f2f7", "clusterBkg": "#f4f7fa", "clusterBorder": "#cbd5e1",
+  "edgeLabelBackground": "#ffffff", "fontFamily": "-apple-system, Segoe UI, Roboto, Inter, Arial, sans-serif",
+  "actorBkg": "#ffffff", "actorBorder": "#1f6f91", "actorTextColor": "#111827", "actorLineColor": "#1f6f91",
+  "signalColor": "#1f6f91", "signalTextColor": "#111827", "labelBoxBkgColor": "#e7f2f7",
+  "labelBoxBorderColor": "#1f6f91", "labelTextColor": "#111827", "loopTextColor": "#6b7280",
+  "noteBkgColor": "#fff4e5", "noteBorderColor": "#f7941d", "noteTextColor": "#111827",
+  "activationBorderColor": "#f7941d", "activationBkgColor": "#fff4e5", "sequenceNumberColor": "#ffffff"
+}}}%%
+flowchart LR
+  actor(["Digital &amp; IT Executive — Tech Buy BD"])
+
+  subgraph usecases["Tech Buy Stock Tool"]
+    direction TB
+    uc1(["Manage categories"])
+    uc2(["Attach / bulk-upload — other-site links"])
+    uc3(["Flag No Price Sync"])
+    uc4(["Start fetching — price / stock comparison"])
+    uc5(["Review flagged products — Need Action"])
+    uc6(["Resolve variant mismatches"])
+    uc7(["Export to Excel"])
+    uc8(["Track sync issues — missing link · removed · incomplete"])
+    uc9(["Sync Shopify catalog"])
+  end
+
+  actor --- uc1
+  actor --- uc2
+  actor --- uc3
+  actor --- uc4
+  actor --- uc5
+  actor --- uc6
+  actor --- uc7
+  actor --- uc8
+  actor --- uc9
+</pre>
+      </div>
+    </section>
+
+    <section class="card" id="seq-fetch">
+      <div class="card-head"><span class="card-num">05</span><h2>Sequence — Start Fetching</h2></div>
+      <p class="caption">Clicking "Start Fetching" kicks off a background thread pool; the Dashboard polls for progress and live stats every 1.5 seconds while it runs.</p>
+      <div class="diagram-frame">
+<pre class="mermaid">
+%%{init: {"theme": "base", "themeVariables": {
+  "primaryColor": "#e7f2f7", "primaryTextColor": "#111827", "primaryBorderColor": "#1f6f91",
+  "lineColor": "#1f6f91", "secondaryColor": "#fff4e5", "secondaryBorderColor": "#f7941d",
+  "tertiaryColor": "#ecfdf5", "tertiaryBorderColor": "#047857", "background": "#ffffff",
+  "mainBkg": "#e7f2f7", "clusterBkg": "#f4f7fa", "clusterBorder": "#cbd5e1",
+  "edgeLabelBackground": "#ffffff", "fontFamily": "-apple-system, Segoe UI, Roboto, Inter, Arial, sans-serif",
+  "actorBkg": "#ffffff", "actorBorder": "#1f6f91", "actorTextColor": "#111827", "actorLineColor": "#1f6f91",
+  "signalColor": "#1f6f91", "signalTextColor": "#111827", "labelBoxBkgColor": "#e7f2f7",
+  "labelBoxBorderColor": "#1f6f91", "labelTextColor": "#111827", "loopTextColor": "#6b7280",
+  "noteBkgColor": "#fff4e5", "noteBorderColor": "#f7941d", "noteTextColor": "#111827",
+  "activationBorderColor": "#f7941d", "activationBkgColor": "#fff4e5", "sequenceNumberColor": "#ffffff"
+}}}%%
+sequenceDiagram
+  actor User
+  participant UI as Dashboard (JS)
+  participant Flask as Flask Route
+  participant Runner as runner.py
+  participant Parser as Site Parser
+  participant Models as models.py
+  participant DB as SQLite
+
+  User->>UI: Click "Start Fetching"
+  UI->>Flask: POST /fetch/start
+  Flask->>Runner: start_fetch()
+  activate Runner
+  Runner->>Models: get_all_products()
+  Models->>DB: SELECT products
+  DB-->>Models: rows
+  Models-->>Runner: product list
+
+  loop each product, thread pool
+    Runner->>Parser: fetch(other_link)
+    Parser-->>Runner: price / stock
+    Runner->>Models: update_*_fetch_result()
+    Models->>DB: UPSERT fetch_results / product_variants
+  end
+  deactivate Runner
+
+  loop every 1.5s while running
+    UI->>Flask: GET /dashboard/stats
+    Flask->>Models: get_dashboard_data()
+    Models->>DB: aggregate queries
+    Models-->>Flask: stats, report, summary
+    Flask-->>UI: JSON
+    UI-->>User: live-updating tiles and rows
+  end
+</pre>
+      </div>
+    </section>
+
+    <section class="card" id="seq-sync">
+      <div class="card-head"><span class="card-num">06</span><h2>Sequence — Shopify Catalog Sync</h2></div>
+      <p class="caption"><code>get_product_api_call.py</code> is a separate, manually-run script — never triggered from the web app. It purges never-paired products before every pull, so only paired or intentionally-unpaired products persist across syncs.</p>
+      <div class="diagram-frame">
+<pre class="mermaid">
+%%{init: {"theme": "base", "themeVariables": {
+  "primaryColor": "#e7f2f7", "primaryTextColor": "#111827", "primaryBorderColor": "#1f6f91",
+  "lineColor": "#1f6f91", "secondaryColor": "#fff4e5", "secondaryBorderColor": "#f7941d",
+  "tertiaryColor": "#ecfdf5", "tertiaryBorderColor": "#047857", "background": "#ffffff",
+  "mainBkg": "#e7f2f7", "clusterBkg": "#f4f7fa", "clusterBorder": "#cbd5e1",
+  "edgeLabelBackground": "#ffffff", "fontFamily": "-apple-system, Segoe UI, Roboto, Inter, Arial, sans-serif",
+  "actorBkg": "#ffffff", "actorBorder": "#1f6f91", "actorTextColor": "#111827", "actorLineColor": "#1f6f91",
+  "signalColor": "#1f6f91", "signalTextColor": "#111827", "labelBoxBkgColor": "#e7f2f7",
+  "labelBoxBorderColor": "#1f6f91", "labelTextColor": "#111827", "loopTextColor": "#6b7280",
+  "noteBkgColor": "#fff4e5", "noteBorderColor": "#f7941d", "noteTextColor": "#111827",
+  "activationBorderColor": "#f7941d", "activationBkgColor": "#fff4e5", "sequenceNumberColor": "#ffffff"
+}}}%%
+sequenceDiagram
+  actor Exec as Digital &amp; IT Exec
+  participant Script as get_product_api_call.py
+  participant Shopify as Shopify Admin API
+  participant Models as models.py
+  participant DB as SQLite
+
+  Exec->>Script: python get_product_api_call.py
+  Script->>Models: delete_products_without_link_or_no_sync()
+  Models->>DB: delete unpaired, untagged products
+  Script->>Shopify: GraphQL products query, paged
+
+  loop each page
+    Shopify-->>Script: products + variants
+    alt 0-1 real variants
+      Script->>Models: upsert_single_product()
+    else 2+ real variants
+      Script->>Models: upsert_variant_product()
+    end
+    Models->>DB: insert or update, matched by shopify_handle
+  end
+
+  Script->>Models: mark_shopify_removed(current_handles)
+  Models->>DB: flag products no longer Active
+  Script-->>Exec: console summary
+</pre>
+      </div>
+    </section>
+
+    <section class="card" id="activity">
+      <div class="card-head"><span class="card-num">07</span><h2>Variant Matching — Decision Logic</h2></div>
+      <p class="caption">Every Tech Buy variant is matched to the other site purely by name, as an order-independent set. Once every variant has a status, the product itself lands in exactly one tab, checked in a strict waterfall.</p>
+      <div class="diagram-frame">
+<pre class="mermaid">
+%%{init: {"theme": "base", "themeVariables": {
+  "primaryColor": "#e7f2f7", "primaryTextColor": "#111827", "primaryBorderColor": "#1f6f91",
+  "lineColor": "#1f6f91", "secondaryColor": "#fff4e5", "secondaryBorderColor": "#f7941d",
+  "tertiaryColor": "#ecfdf5", "tertiaryBorderColor": "#047857", "background": "#ffffff",
+  "mainBkg": "#e7f2f7", "clusterBkg": "#f4f7fa", "clusterBorder": "#cbd5e1",
+  "edgeLabelBackground": "#ffffff", "fontFamily": "-apple-system, Segoe UI, Roboto, Inter, Arial, sans-serif",
+  "actorBkg": "#ffffff", "actorBorder": "#1f6f91", "actorTextColor": "#111827", "actorLineColor": "#1f6f91",
+  "signalColor": "#1f6f91", "signalTextColor": "#111827", "labelBoxBkgColor": "#e7f2f7",
+  "labelBoxBorderColor": "#1f6f91", "labelTextColor": "#111827", "loopTextColor": "#6b7280",
+  "noteBkgColor": "#fff4e5", "noteBorderColor": "#f7941d", "noteTextColor": "#111827",
+  "activationBorderColor": "#f7941d", "activationBkgColor": "#fff4e5", "sequenceNumberColor": "#ffffff"
+}}}%%
+flowchart TD
+  start(["For each Tech Buy variant"]) --> match{"Name matches an other-site variant?"}
+  match -->|Yes| found["Found — compare price / stock as normal"]
+  match -->|No| tbstock{"Tech Buy stock?"}
+  tbstock -->|Out of Stock| foundtb["Found TB — Need Action = No, locked"]
+  tbstock -->|In Stock| notfound["Not Found — Need Action = Yes"]
+
+  otherleft(["Other-site variants with no Tech Buy match"]) --> foundot["Found OT — new interactive row, Need Action = Yes"]
+
+  found --> tabs{"Product-level tab — first match wins"}
+  foundtb --> tabs
+  notfound --> tabs
+  foundot --> tabs
+  tabs -->|"every variant is Found or Found TB"| exact["Exact Match"]
+  tabs -->|"else, at least one Not Found"| notf["Variant Not Found"]
+  tabs -->|"else, at least one Found OT"| missing["Missing from Tech Buy"]
+
+  classDef good fill:#ecfdf5,stroke:#047857,color:#047857
+  classDef bad fill:#fef2f2,stroke:#b91c1c,color:#b91c1c
+  class found,foundtb,exact good
+  class notfound,foundot,notf,missing bad
+</pre>
+      </div>
+      <div class="legend">
+        <span class="badge badge-no">Found</span>
+        <span class="badge badge-no">Found TB</span>
+        <span class="badge badge-yes">Not Found</span>
+        <span class="badge badge-yes">Found OT</span>
+        <span style="margin-left: 0.3rem;">— same badge colors as the Variant Products page</span>
+      </div>
+    </section>
+
+    <div class="card">
+      <footer class="note">
+        <strong>Notes —</strong> Diagrams reflect the codebase as of this session: the 4-state variant match model (Found / Not Found / Found TB / Found OT), the No Price Sync exclusion, and the pre-sync purge in the Shopify script. No UML class diagram is included since the app has no classes to model — the Module Components view (03) covers that ground instead. Colors, type, and layout are pulled directly from the app's own <code>style.css</code>. Rendered with Mermaid.
+      </footer>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+<script>
+  mermaid.initialize({ startOnLoad: true, securityLevel: "loose", fontFamily: "-apple-system, Segoe UI, Roboto, Inter, Arial, sans-serif" });
+</script>
+<script src="script.js"></script>
+</body>
+</html>
