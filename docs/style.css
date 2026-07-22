@@ -213,10 +213,14 @@
     padding: 1.1rem;
     overflow-x: auto;
   }
+  /* justify-content: center here would clip wide diagrams symmetrically on both
+     sides instead of scrolling cleanly -- flex-start keeps the left edge fixed so
+     overflow-x: auto can reveal the rest by scrolling right, same as any normal
+     scrollable content. */
   .diagram-frame pre.mermaid {
     margin: 0;
     display: flex;
-    justify-content: center;
+    justify-content: flex-start;
     min-width: max-content;
   }
 
