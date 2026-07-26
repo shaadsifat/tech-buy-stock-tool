@@ -253,6 +253,16 @@
         requests of <strong>1 second, randomly varying up to ±15%</strong> each time (so ~0.85s–1.15s,
         never a perfectly regular bot-like cadence) — a single manual re-fetch of one product skips
         this entirely, since it's not a burst.</li>
+        <li><strong>StarTech — dead-stock override:</strong> the per-variant AJAX endpoint can report a
+        variant as available even when the page itself says otherwise. If the page's Add to Cart area
+        shows an Out of Stock notice instead of the normal quantity controls, every variant on that
+        page is forced to Out of Stock regardless of what the AJAX endpoint returned — that page-level
+        signal always wins. Price is left as reported.</li>
+        <li><strong>StarTech — Cash Discount pricing:</strong> some products show three prices: a
+        Regular Price (EMI-only MSRP), a struck-through "was" price, and a highlighted Cash Discount
+        price for online/cash payment. Sale Price uses the Cash Discount price when the product has
+        one, since that's what a customer actually pays by default — not the struck-through price next
+        to it. Products without this scheme are unaffected.</li>
         <li><strong>Tech Buy catalog data:</strong> pulled directly from Shopify's Admin GraphQL API
         (read-only access) via the separate <code>get_product_api_call.py</code> script, instead of
         scraping — sidesteps a caching/bot-detection issue on the storefront that could otherwise

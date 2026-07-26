@@ -62,11 +62,26 @@ def _parse_stock(soup):
     return status_cell.get_text(strip=True)
 
 
+def _is_dead_stock(soup):
+    """When a product has zero purchasable stock, the Add to Cart area's `.cart-option`
+    div holds a `.stock-status` notice instead of the normal quantity controls -- when
+    there's real stock, that div has no `.stock-status` span at all (confirmed by
+    comparing a known dead product against a known live one). This is a page-level
+    signal checked *before* trusting the per-variant AJAX endpoint's own stock field,
+    since that endpoint has been observed reporting a variant as available even when
+    the page itself says every variant is dead."""
+    status = soup.select_one(".cart-option .stock-status")
+    if status is None:
+        return False
+    text = status.get_text(strip=True).lower()
+    return "out of stock" in text or "sold out" in text
+
+
 def parse(url):
     html = fetch_html(url)
     soup = BeautifulSoup(html, "html.parser")
 
-    stock = _parse_stock(soup)
+    stock = "Out of Stock" if _is_dead_stock(soup) else _parse_stock(soup)
 
     price_cell = soup.select_one(".product-price")
     regular_row = soup.select_one(".product-regular-price")
@@ -171,6 +186,7 @@ def parse_variants(url):
 
     group_names = [name for (_, name, _) in groups]
     value_lists = [values for (_, _, values) in groups]
+    dead_stock = _is_dead_stock(soup)
 
     variants = []
     for combo in itertools.product(*value_lists):
@@ -184,14 +200,24 @@ def parse_variants(url):
 
         price_text = data.get("price")
         regular_text = data.get("regular_price")
+        # "special" is StarTech's Cash Discount price -- the one actually pre-selected
+        # and highlighted on the page for online/cash payment, lower than "price" (the
+        # struck-through "was" amount next to it). It's `False` (not a string) when a
+        # product has no cash-discount scheme, in which case "price" is the real sale
+        # price same as before. "regular_price" is the EMI-only MSRP either way.
+        special_text = data.get("special")
         variants.append({
             "labels": [title for (_, title) in combo],
-            # when a product is on sale, "price" is the discounted one and
-            # "regular_price" the original — when it's not, they're identical, so
-            # mirror parse()'s convention: no separate "sale" unless it's actually lower
             "regular": parse_amount_text(regular_text) if regular_text else parse_amount_text(price_text),
-            "sale": parse_amount_text(price_text) if regular_text and regular_text != price_text else None,
-            "stock": _map_stock(data.get("stock")),
+            "sale": (
+                parse_amount_text(special_text) if special_text
+                else parse_amount_text(price_text) if regular_text and regular_text != price_text
+                else None
+            ),
+            # the page-level dead-stock notice overrides the AJAX endpoint's own stock
+            # field, since the endpoint can report a variant as available even when the
+            # page itself says nothing here is purchasable — price is left as reported.
+            "stock": "Out of Stock" if dead_stock else _map_stock(data.get("stock")),
         })
 
     return {"group_names": group_names, "variants": variants}
