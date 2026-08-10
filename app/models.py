@@ -382,10 +382,17 @@ ALL_FILTER_KEYS = set(FILTERABLE_COLUMNS) | {"reviewed", "other_site", "shopify_
 def clean_other_link(url):
     """Strips query string/fragment (tracking codes, ?ref=..., #anchor, etc.) off an
     Other-site link, keeping just the clean product URL — those params are only ever
-    tracking/filter noise, never anything the scraper needs to find the right page."""
+    tracking/filter noise, never anything the scraper needs to find the right page.
+
+    Also adds a missing scheme (e.g. a pasted "www.startech.com.bd/..." with no
+    "https://") -- without one, urlparse can't read a domain out of it at all, which
+    breaks both the Other Site filter (shows up as a blank entry) and scraping itself
+    (requests raises MissingSchema)."""
     url = (url or "").strip()
     if not url:
         return url
+    if "://" not in url:
+        url = "https://" + url
     parsed = urlparse(url)
     return parsed._replace(query="", fragment="").geturl()
 
